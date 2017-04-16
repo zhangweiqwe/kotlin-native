@@ -19,8 +19,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#if KONAN_WINDOWS
+#include <io.h>
+#else
 #include <unistd.h>
-
+#endif
 #include <iterator>
 #include <string>
 
@@ -35,6 +38,27 @@
 #include "utf8.h"
 
 namespace {
+
+#if KONAN_WINDOWS
+#define STDOUT_FILENO 1
+// Yes, Windows lacks memmem().
+const void* memmem(const void *haystack_start, size_t haystack_len,
+ const void* needle_start, size_t needle_len) {
+  const unsigned char *haystack = (const unsigned char *) haystack_start;
+  const unsigned char *needle = (const unsigned char *) needle_start;
+
+  if (needle_len == 0)
+    return haystack;
+
+  while (needle_len <= haystack_len) {
+      if (!memcmp (haystack, needle, needle_len))
+        return haystack;
+      haystack++;
+      haystack_len--;
+  }
+  return nullptr;
+}
+#endif // KONAN_WINDOWS
 
 OBJ_GETTER(utf8ToUtf16, const char* rawString, size_t rawStringLength) {
   uint32_t charCount = utf8::distance(rawString, rawString + rawStringLength);
@@ -1043,7 +1067,7 @@ KInt Kotlin_String_indexOfString(KString thiz, KString other, KInt fromIndex) {
   KInt count = thiz->count_;
   const KChar* thizRaw = CharArrayAddressOfElementAt(thiz, fromIndex);
   const KChar* otherRaw = CharArrayAddressOfElementAt(other, 0);
-  void* result = memmem(thizRaw, (thiz->count_ - fromIndex) * sizeof(KChar),
+  const void* result = memmem(thizRaw, (thiz->count_ - fromIndex) * sizeof(KChar),
                         otherRaw, other->count_ * sizeof(KChar));
   if (result == nullptr) return -1;
 

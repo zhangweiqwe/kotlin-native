@@ -42,17 +42,18 @@ void setupClang(Project project) {
 
     project.plugins.withType(NativeComponentPlugin) {
         project.model {
-            toolChains {
-                clang(Clang) {
-                    clangPath.each {
-                        path it
-                    }
-
-                    eachPlatform { // TODO: will not work when cross-compiling
-                        [cCompiler, cppCompiler, linker].each {
-                            it.withArguments { it.addAll(hostClangArgs) }
+            if (!isWindows()) {
+                toolChains {
+                    clang(Clang) {
+                        clangPath.each {
+                            path it
                         }
 
+                        eachPlatform { // TODO: will not work when cross-compiling
+                            [cCompiler, cppCompiler, linker].each {
+                                it.withArguments { it.addAll(hostClangArgs) }
+                            }
+                        }    
                     }
                 }
             }
@@ -78,7 +79,8 @@ void setupCompilationFlags() {
                 "-I$raspberryPiSysrootDir/usr/include/c++/4.8.3",
                 "-I$raspberryPiSysrootDir/usr/include/c++/4.8.3/arm-linux-gnueabihf"]
             ]
-     } else {
+     } 
+     if (isMac()) {
          ext.targetArgs <<
             ["host":
                 ["--sysroot=$hostSysrootDir", "-mmacosx-version-min=$minMacOsVersion"], 
@@ -90,23 +92,51 @@ void setupCompilationFlags() {
 //                ["-stdlib=libc++", "-isysroot", "$iphoneSimSysrootDir", "-miphoneos-version-min=8.0.0"],
             ]
      }
+     if (isWindows()) {
+         ext.targetArgs <<
+            ["host":
+                ["--sysroot=$hostSysrootDir",
+                // Those are for VC system headers.
+                 "-std=c++14",
+                 "-Wno-ignored-attributes", "-Wno-deprecated-declarations",
+                 "-Wno-microsoft-enum-value",  "-Wno-microsoft-template",
+                 "-I$hostSysrootDir/win8.1/include",
+                 "-I$hostSysrootDir/vc14/include",
+                 "-m64", "-fmsc-version=1900",
+                 // Workaround VC glitches.
+                 "-D__is_assignable=__is_trivially_assignable",
+                 // Backtraces not yet available on Windows.
+                 "-DOMIT_BACKTRACE=1", "-DKONAN_WINDOWS=1",
+                 // Explicitly allow C++ exceptions.
+                 "-fcxx-exceptions"
+                 // Those are for MinGW system headers.
+                 //"-Wno-missing-declarations", "-Wno-deprecated-register",
+                 //"-I$hostSysrootDir/mingw5.4.0/include",
+                 //"-I$hostSysrootDir/mingw5.4.0/include/c++"
+                 ]
+            ]
+     } 
      ext.targetList = ext.targetArgs.keySet() as List
 
-    if (isLinux()) {
+     if (isLinux()) {
         binDir = "$gccToolchainDir/$gnuTriplet/bin"
         ext.clangArgs.addAll([
                 "--gcc-toolchain=$gccToolchainDir",
                 "-L$llvmDir/lib"
         ])
-    } else {
+     } else if (isMac()) {
         binDir = "$hostSysrootDir/usr/bin"
-    }
-    ext.clangArgs << "-B$binDir"
-    ext.hostClangArgs = ext.clangArgs.clone() 
-    ext.hostClangArgs.addAll(ext.targetArgs['host'])
+     } else if (isWindows()) {
+        binDir = "$hostSysrootDir/vc14/bin"
+     } else {
+        throw Error("Unsupported platform")
+     }
+     ext.clangArgs << "-B$binDir"
+     ext.hostClangArgs = ext.clangArgs.clone() 
+     ext.hostClangArgs.addAll(ext.targetArgs['host'])
 
-    ext.clangPath << binDir
-    ext.jvmArgs = ["-ea"]
+     ext.clangPath << binDir
+     ext.jvmArgs = ["-ea"]
 }
 
 void loadLocalProperties() {
@@ -141,6 +171,10 @@ class PlatformInfo {
         return osName == 'Linux'
     }
 
+    boolean isWindows() {
+        return osName.startsWith('Windows')
+    }
+
     boolean isAmd64() {
         return osArch in ['x86_64', 'amd64']
     }
@@ -156,6 +190,7 @@ class PlatformInfo {
     String simpleOsName() {
         if (isMac()) return 'macos'
         if (isLinux()) return 'linux'
+        if (isWindows()) return 'windows'
         throw unsupportedPlatformException()
     }
 
@@ -323,12 +358,6 @@ task bundle(type: Tar) {
     compression = Compression.GZIP
 }
 
-task demo(type: Exec) {
-    dependsOn 'dist'
-
-    commandLine './dist/bin/konanc', 'backend.native/tests/runtime/collections/moderately_large_array.kt', '-o', 'build/demo.kexe'
-}
-
 task clean {
     doLast {
         file('dist').traverse(type: FileType.ANY, excludeNameFilter: "dependencies", maxDepth: 0) {
@@ -337,4 +366,3 @@ task clean {
         delete bundle.outputs.files
     }
 }
-

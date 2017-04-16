@@ -68,6 +68,7 @@ JNIEXPORT jlong JNICALL Java_clang_externals_timegm (JNIEnv *env, jobject obj, j
 JNIEXPORT jint JNICALL Java_clang_externals_nanosleep (JNIEnv *env, jobject obj, jlong __rqtp, jlong __rmtp) {
     return (jint) (nanosleep((struct timespec*)__rqtp, (struct timespec*)__rmtp));
 }
+#if 0
 JNIEXPORT jint JNICALL Java_clang_externals_clock_1getres (JNIEnv *env, jobject obj, jint __clock_id, jlong __res) {
     return (jint) (clock_getres((clockid_t)__clock_id, (struct timespec*)__res));
 }
@@ -80,6 +81,7 @@ JNIEXPORT jlong JNICALL Java_clang_externals_clock_1gettime_1nsec_1np (JNIEnv *e
 JNIEXPORT jint JNICALL Java_clang_externals_clock_1settime (JNIEnv *env, jobject obj, jint __clock_id, jlong __tp) {
     return (jint) (clock_settime((clockid_t)__clock_id, (struct timespec*)__tp));
 }
+#endif
 JNIEXPORT jlong JNICALL Java_clang_externals_clang_1getCString (JNIEnv *env, jobject obj, jlong string) {
     return (jlong) (clang_getCString(*(CXString*)string));
 }
@@ -587,10 +589,17 @@ JNIEXPORT jlong JNICALL Java_clang_externals_clang_1getArrayElementType (JNIEnv 
 JNIEXPORT jlong JNICALL Java_clang_externals_clang_1getArraySize (JNIEnv *env, jobject obj, jlong T) {
     return (jlong) (clang_getArraySize(*(CXType*)T));
 }
+
 JNIEXPORT jlong JNICALL Java_clang_externals_clang_1Type_1getNamedType (JNIEnv *env, jobject obj, jlong T, jlong retValPlacement) {
+#if 0
     *(CXType*)retValPlacement = clang_Type_getNamedType(*(CXType*)T);
     return (jlong) retValPlacement;
+#else
+    assert(0);
+    return 0;
+#endif
 }
+
 JNIEXPORT jlong JNICALL Java_clang_externals_clang_1Type_1getAlignOf (JNIEnv *env, jobject obj, jlong T) {
     return (jlong) (clang_Type_getAlignOf(*(CXType*)T));
 }
@@ -959,13 +968,26 @@ JNIEXPORT void JNICALL Java_clang_externals_clang_1remap_1getFilenames (JNIEnv *
     clang_remap_getFilenames((CXRemapping)arg0, (unsigned int)index, (CXString*)original, (CXString*)transformed);
 }
 JNIEXPORT void JNICALL Java_clang_externals_clang_1remap_1dispose (JNIEnv *env, jobject obj, jlong arg0) {
+#if 0
     clang_remap_dispose((CXRemapping)arg0);
+#else
+    assert(0);
+#endif
 }
 JNIEXPORT jint JNICALL Java_clang_externals_clang_1findReferencesInFile (JNIEnv *env, jobject obj, jlong cursor, jlong file, jlong visitor) {
+#if 0
     return (jint) (clang_findReferencesInFile(*(CXCursor*)cursor, (CXFile)file, *(struct CXCursorAndRangeVisitor*)visitor));
+#else
+    assert(0);
+#endif
 }
 JNIEXPORT jint JNICALL Java_clang_externals_clang_1findIncludesInFile (JNIEnv *env, jobject obj, jlong TU, jlong file, jlong visitor) {
+#if 0
     return (jint) (clang_findIncludesInFile((CXTranslationUnit)TU, (CXFile)file, *(struct CXCursorAndRangeVisitor*)visitor));
+#else
+    assert(0);
+    return 0;
+#endif
 }
 JNIEXPORT jint JNICALL Java_clang_externals_clang_1index_1isEntityObjCContainerKind (JNIEnv *env, jobject obj, jint arg0) {
     return (jint) (clang_index_isEntityObjCContainerKind((CXIdxEntityKind)arg0));

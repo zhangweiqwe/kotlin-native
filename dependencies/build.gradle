@@ -31,6 +31,8 @@ abstract class NativeDep extends DefaultTask {
             return 'darwin-macos'
         } else if (project.isLinux() && project.isAmd64()) {
             return 'linux-x86-64'
+        } else if (project.isWindows() && project.isAmd64()) {
+            return 'windows-x86-64'
         } else {
             throw project.unsupportedPlatformException()
         }
@@ -129,7 +131,7 @@ if (isLinux()) {
     task raspberrypiLibffi(type: HelperNativeDep) {
         baseName = "libffi-3.2.1-2-raspberrypi"
     }
-} else {
+} else if (isMac()) {
     task hostSysroot(type: HelperNativeDep) {
         baseName = "target-sysroot-1-$host"
     }
@@ -144,6 +146,12 @@ if (isLinux()) {
 //    task iphoneSimSysroot(type: TgzNativeDep) {
 //       baseName = "target-sysroot-1-darwin-ios-sim"
 //  }
+} else if (isWindows()) {
+    task hostSysroot(type: HelperNativeDep) {
+        baseName = "target-sysroot-1-windows"
+    }
+} else {
+  throw Error("Unknown host")
 }
 
 

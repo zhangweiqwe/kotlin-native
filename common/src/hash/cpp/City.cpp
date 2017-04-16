@@ -1,8 +1,9 @@
 #include "City.h"
 
+#include <stdint.h>
 #include <string.h>
 
-#include <algorithm>
+#include <utility>
 
 namespace {
 
