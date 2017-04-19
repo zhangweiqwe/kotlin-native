@@ -20,7 +20,6 @@ import java.io.*
 import java.net.URL
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.util.Properties
 import kotlin.concurrent.thread
 
 // TODO: Try to use some dependency management system (Ivy?)

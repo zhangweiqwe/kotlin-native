@@ -21,11 +21,11 @@ import llvm.*
 import org.jetbrains.kotlin.backend.konan.Context
 import org.jetbrains.kotlin.backend.konan.KonanConfigKeys
 import org.jetbrains.kotlin.backend.konan.serialization.deserializeModule
+import org.jetbrains.kotlin.backend.konan.util.File
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import java.io.Closeable
-import java.io.File
 
 fun loadMetadata(configuration: CompilerConfiguration, file: File): ModuleDescriptorImpl {
 
@@ -83,7 +83,7 @@ class MetadataReader(file: File) : Closeable {
         memScoped {
             val bufRef = alloc<LLVMMemoryBufferRefVar>()
             val errorRef = allocPointerTo<ByteVar>()
-            val res = LLVMCreateMemoryBufferWithContentsOfFile(file.toString(), bufRef.ptr, errorRef.ptr)
+            val res = LLVMCreateMemoryBufferWithContentsOfFile(file.absolutePath, bufRef.ptr, errorRef.ptr)
             if (res != 0) {
                 throw Error(errorRef.value?.toKString())
             }

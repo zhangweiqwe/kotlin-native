@@ -16,8 +16,9 @@
 
 package org.jetbrains.kotlin.backend.konan
 
+import org.jetbrains.kotlin.backend.konan.util.File
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import java.io.File
+
 
 class Distribution(val config: CompilerConfiguration) {
 
@@ -29,7 +30,7 @@ class Distribution(val config: CompilerConfiguration) {
 
     private fun findKonanHome(): String {
         val value = System.getProperty("konan.home", "dist")
-        val path = File(value).absolutePath 
+        val path = File(value).absolutePath
         return path
     }
 

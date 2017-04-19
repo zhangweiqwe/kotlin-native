@@ -18,10 +18,14 @@ package org.jetbrains.kotlin.backend.konan.util
 
 class File(val path:String) {
     private val javaFile = java.io.File(path)
-    val  absoluteFile: File
-        get() = File(javaFile.absolutePath)
-    val name: String
-        get() = javaFile.name
-    val parent: String
-        get() = javaFile.parent
+    val absoluteFile: File get() = File(javaFile.absolutePath)
+    val name: String get() = javaFile.name
+    val parent: String get() = javaFile.parent
+    val absolutePath: String get() = javaFile.absolutePath
+    fun exists(): Boolean = javaFile.exists()
+    fun deleteOnExit() = javaFile.deleteOnExit()
+    companion object {
+        fun createTempFile(prefix: String, suffix: String) = File(java.io.File.createTempFile(prefix, suffix).absolutePath)
+    }
+
 }

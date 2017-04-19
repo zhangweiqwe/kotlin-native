@@ -16,7 +16,7 @@
 
 package org.jetbrains.kotlin.backend.konan
 
-import java.io.File
+import org.jetbrains.kotlin.backend.konan.util.File
 import java.lang.ProcessBuilder
 import java.lang.ProcessBuilder.Redirect
 
