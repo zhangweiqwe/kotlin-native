@@ -166,8 +166,7 @@ abstract class KonanTest extends JavaExec {
         project.file(file).write(text)
     }
 
-    @TaskAction
-    void executeTest() {
+    void executeTest(Closure<List<String>> exePreparer) {
         createOutputDirectory()
         def exe = buildExePath()
 
@@ -182,10 +181,7 @@ abstract class KonanTest extends JavaExec {
         def out = new ByteArrayOutputStream()
         //TODO Add test timeout
         ExecResult execResult = project.execRemote {
-            commandLine exe
-            if (arguments != null) {
-                args arguments
-            }
+            commandLine = exePreparer(this, exe)
             if (testData != null) {
                 standardInput = new ByteArrayInputStream(testData.bytes)
             }
@@ -215,6 +211,19 @@ class TestFailedException extends RuntimeException {
 class RunKonanTest extends KonanTest {
     void compileTest(List<String> filesToCompile, String exe) {
         runCompiler(filesToCompile, exe, flags?:[])
+    }
+}
+
+class LldbRunTest extends RunKonanTest {
+    String lldbScript = null
+    @TaskAction
+    void executeTest() {
+        super.executeTest{ test, exe ->
+            if (test.arguments != null)
+                return ["lldb", "-s", lldbScript, "--", exe, *test.arguments]
+            else
+                return ["lldb", "-s", lldbScript, "--", exe]
+        }
     }
 }
 
@@ -435,7 +444,6 @@ fun main(args : Array<String>) {
     }
 
     @TaskAction
-    @Override
     void executeTest() {
         createOutputDirectory()
         def outputRootDirectory = outputDirectory
@@ -469,7 +477,9 @@ fun main(args : Array<String>) {
             testCase.start()
             if (isEnabledForNativeBackend(source)) {
                 try {
-                    super.executeTest()
+                    super.executeTest{ test, exe ->
+                        return [exe, *test.arguments]
+                    }
                     currentResult = testCase.pass()
                 } catch (TestFailedException e) {
                     currentResult = testCase.fail(e)

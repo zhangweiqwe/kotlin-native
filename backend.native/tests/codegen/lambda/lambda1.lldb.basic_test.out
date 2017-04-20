@@ -1,0 +1,25 @@
+(lldb) target create "test.output/local/lldblambda1/lambda1.kt.exe"
+Current executable set to 'test.output/local/lldblambda1/lambda1.kt.exe' (x86_64).
+(lldb) command source -s 0 'backend.native/tests/basic_test.lldb'
+Executing commands in '/Users/minamoto/ws/.git-trees/debugger-test/backend.native/tests/basic_test.lldb'.
+(lldb) b  kfun:main(kotlin.Array<kotlin.String>)
+Breakpoint 1: where = lambda1.kt.exe`kfun:main(kotlin.Array<kotlin.String>) + 4 at lambda1.kt:1, address = 0x0000000100000a14
+(lldb) r
+Process 3459 stopped
+* thread #1, queue = 'com.apple.main-thread', stop reason = breakpoint 1.1
+    frame #0: 0x0000000100000a14 lambda1.kt.exe`kfun:main(kotlin.Array<kotlin.String>) at lambda1.kt:1
+-> 1   	[4mf[0mun main(args : Array<String>) {
+   2   	    run {
+   3   	        println("lambda")
+   4   	    }
+   5   	}
+   6   	
+   7   	fun run(f: () -> Unit) {
+
+Process 3459 launched: '/Users/minamoto/ws/.git-trees/debugger-test/test.output/local/lldblambda1/lambda1.kt.exe' (x86_64)
+(lldb) c
+lambda
+Process 3459 resuming
+Process 3459 exited with status = 0 (0x00000000) 
+
+(lldb) q

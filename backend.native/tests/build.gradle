@@ -1304,6 +1304,13 @@ task lambda1(type: RunKonanTest) {
     source = "codegen/lambda/lambda1.kt"
 }
 
+task lldblambda1(type: LldbRunTest) {
+    // TODO: we need clear procces numbers from the binary, before testing with gold value.
+    //goldValue = project.file("codegen/lambda/lambda1.lldb.basic_test.out").text
+    source = "codegen/lambda/lambda1.kt"
+    lldbScript = "basic_test.lldb"
+}
+
 task lambda2(type: RunKonanTest) {
     arguments = ["arg0"]
     goldValue = "arg0\n"
