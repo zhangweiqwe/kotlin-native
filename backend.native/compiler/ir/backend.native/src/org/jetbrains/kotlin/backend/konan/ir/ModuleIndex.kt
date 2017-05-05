@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
@@ -28,6 +29,7 @@ import org.jetbrains.kotlin.ir.visitors.acceptVoid
 
 class ModuleIndex(val module: IrModuleFragment) {
 
+    var currentFile: IrFile? = null
     /**
      * Contains all classes declared in [module]
      */
@@ -36,7 +38,8 @@ class ModuleIndex(val module: IrModuleFragment) {
     /**
      * Contains all functions declared in [module]
      */
-    val functions = mutableMapOf<FunctionDescriptor, IrFunction>()
+    val functions      = mutableMapOf<FunctionDescriptor, IrFunction>()
+    val functionToFile = mutableMapOf<FunctionDescriptor, IrFile>()
 
     init {
         val map = mutableMapOf<ClassDescriptor, IrClass>()
@@ -44,6 +47,11 @@ class ModuleIndex(val module: IrModuleFragment) {
         module.acceptVoid(object : IrElementVisitorVoid {
             override fun visitElement(element: IrElement) {
                 element.acceptChildrenVoid(this)
+            }
+
+            override fun visitFile(declaration: IrFile) {
+                currentFile = declaration
+                super.visitFile(declaration)
             }
 
             override fun visitClass(declaration: IrClass) {
@@ -57,6 +65,7 @@ class ModuleIndex(val module: IrModuleFragment) {
 
                 val functionDescriptor = declaration.descriptor
                 functions[functionDescriptor] = declaration
+                functionToFile[functionDescriptor] = currentFile!!
             }
 
         })
