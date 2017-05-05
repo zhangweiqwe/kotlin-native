@@ -470,7 +470,7 @@ internal class IrSerializer(val context: Context,
     fun serializeFunction(function: IrFunction): KonanIr.IrFunc {
         val proto = KonanIr.IrFunc.newBuilder()
         val body = function.body
-        if (body != null)  proto.setBody(serializeStatement(body))
+        if (body != null) proto.setBody(serializeStatement(body))
 
         function.descriptor.valueParameters.forEachIndexed { index, it ->
             val default = function.getDefault(it)
@@ -481,6 +481,10 @@ internal class IrSerializer(val context: Context,
                 proto.addDefaultArgument(pair)
             }
         }
+
+        val irFile = context.ir.originalModuleIndex.functionToFile[function.descriptor]
+        val fileName = irFile!!.name.toString()
+        proto.setFileName(fileName)
 
         return proto.build()
     }
@@ -1002,6 +1006,9 @@ internal class IrDeserializer(val context: Context,
                 descriptor.valueParameters.get(it.position), 
                 IrExpressionBodyImpl(start, end, expr))
         }
+
+        val fileName = proto.fileName
+        context.ir.originalModuleIndex.functionToFile[descriptor] =
 
         return function
     }

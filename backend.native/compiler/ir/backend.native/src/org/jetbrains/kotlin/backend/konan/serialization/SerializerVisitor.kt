@@ -48,8 +48,8 @@ internal class DeserializerDriver(val context: Context) {
             context.log{"### IR deserialization attempt:\t$descriptor"}
             try {
                 deserializedIr = IrDeserializer(context, descriptor).decodeDeclaration()
-                context.log{"${deserializedIr!!.descriptor}"}
-                context.log{ir2stringWhole(deserializedIr!!)}
+                //context.log{"${deserializedIr!!.descriptor}"}
+                //context.log{ir2stringWhole(deserializedIr!!)}
                 context.log{"IR deserialization SUCCESS:\t$descriptor"}
             } catch(e: Throwable) {
                 context.log{"IR deserialization FAILURE:\t$descriptor"}
