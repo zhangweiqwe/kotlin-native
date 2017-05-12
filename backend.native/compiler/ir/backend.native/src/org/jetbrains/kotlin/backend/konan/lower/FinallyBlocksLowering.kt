@@ -288,5 +288,5 @@ internal class FinallyBlocksLowering(val context: Context): FunctionLoweringPass
     inline fun IrBuilderWithScope.irReturnableBlock(descriptor: FunctionDescriptor, body: IrBlockBuilder.() -> Unit) =
             IrReturnableBlockImpl(startOffset, endOffset, descriptor.returnType!!, descriptor, null,
                     IrBlockBuilder(context, scope, startOffset, endOffset, null, descriptor.returnType!!)
-                            .block(body).statements)
+                            .block(body).statements, null)
 }

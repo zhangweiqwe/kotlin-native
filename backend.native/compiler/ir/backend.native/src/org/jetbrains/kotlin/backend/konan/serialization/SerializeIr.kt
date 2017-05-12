@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.backend.common.ScopeWithIr
 import org.jetbrains.kotlin.backend.konan.Context
 import org.jetbrains.kotlin.backend.konan.descriptors.*
 import org.jetbrains.kotlin.backend.konan.KonanIrDeserializationException
+import org.jetbrains.kotlin.backend.konan.ir.IrFileImpl
 import org.jetbrains.kotlin.backend.konan.ir.ir2string
 import org.jetbrains.kotlin.backend.konan.ir.ir2stringWhole
 import org.jetbrains.kotlin.backend.konan.llvm.base64Decode
@@ -1008,7 +1009,8 @@ internal class IrDeserializer(val context: Context,
         }
 
         val fileName = proto.fileName
-        context.ir.originalModuleIndex.functionToFile[descriptor] =
+        val irFile = IrFileImpl(fileName)
+        context.ir.originalModuleIndex.functionToFile[descriptor] = irFile
 
         return function
     }

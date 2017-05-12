@@ -28,7 +28,6 @@ import org.jetbrains.kotlin.backend.konan.descriptors.needsInlining
 import org.jetbrains.kotlin.backend.konan.descriptors.resolveFakeOverride
 import org.jetbrains.kotlin.backend.konan.ir.DeserializerDriver
 import org.jetbrains.kotlin.backend.konan.ir.IrReturnableBlockImpl
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ValueDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.ir.IrElement
@@ -63,7 +62,7 @@ internal class FunctionInlining(val context: Context): IrElementTransformerVoidW
     override fun visitCall(expression: IrCall): IrExpression {
 
         val irCall = super.visitCall(expression) as IrCall
-        val functionDescriptor = irCall.descriptor as FunctionDescriptor
+        val functionDescriptor = irCall.descriptor
         if (!functionDescriptor.needsInlining) return irCall                                // This call does not need inlining.
 
         val functionDeclaration = getFunctionDeclaration(irCall)                            // Get declaration of the function to be inlined.
@@ -83,7 +82,7 @@ internal class FunctionInlining(val context: Context): IrElementTransformerVoidW
 
     private fun getFunctionDeclaration(irCall: IrCall): IrFunction? {
 
-        val functionDescriptor = irCall.descriptor as FunctionDescriptor
+        val functionDescriptor = irCall.descriptor
         val originalDescriptor = functionDescriptor.resolveFakeOverride().original
         val functionDeclaration =
             context.ir.originalModuleIndex.functions[originalDescriptor] ?:                 // If function is declared in the current module.
@@ -131,13 +130,15 @@ private class Inliner(val currentScope: ScopeWithIr, val context: Context) {
         val copyStatements = (copyFunctionDeclaration.body as IrBlockBody).statements       // IR statements from function copy.
         val statements     = replaceDelegatingConstructorCall(copyStatements)
         val returnType     = copyFunctionDeclaration.descriptor.returnType!!                // Substituted return type.
+        val irFile         = context.ir.originalModuleIndex.functionToFile[irCall.descriptor]
         val inlineFunctionBody = IrReturnableBlockImpl(                                     // Create new IR element to replace "call".
             startOffset = copyFunctionDeclaration.startOffset,
             endOffset   = copyFunctionDeclaration.endOffset,
             type        = returnType,
             descriptor  = copyFunctionDeclaration.descriptor.original,
             origin      = null,
-            statements  = statements
+            statements  = statements,
+            irFile      = irFile
         )
 
         val transformer = ParameterSubstitutor()
@@ -190,8 +191,8 @@ private class Inliner(val currentScope: ScopeWithIr, val context: Context) {
     //--- Helpers -------------------------------------------------------------//
 
     private fun isLambdaCall(irCall: IrCall) : Boolean {
-        if (!(irCall.descriptor as FunctionDescriptor).isFunctionInvoke) return false       // Lambda mast be called by "invoke".
-        if (irCall.dispatchReceiver !is IrGetValue)                      return false       // Dispatch receiver mast be IrGetValue.
+        if (!(irCall.descriptor).isFunctionInvoke)  return false                            // Lambda mast be called by "invoke".
+        if (irCall.dispatchReceiver !is IrGetValue) return false                            // Dispatch receiver mast be IrGetValue.
         return true                                                                         // It is lambda call.
     }
 

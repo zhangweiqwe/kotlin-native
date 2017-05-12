@@ -78,14 +78,15 @@ open class DeepCopyIrTreeWithDeclarations : DeepCopyIrTree() {
             copiedVariables[descriptor] ?: descriptor
 
     override fun visitBlock(expression: IrBlock): IrBlock {
-        return if (expression is IrReturnableBlock) {
+        return if (expression is IrReturnableBlockImpl) {
             IrReturnableBlockImpl(
                     startOffset = expression.startOffset,
                     endOffset   = expression.endOffset,
                     type        = expression.type,
                     descriptor  = expression.descriptor,
                     origin      = mapStatementOrigin(expression.origin),
-                    statements  = expression.statements.map { it.transform(this, null) }
+                    statements  = expression.statements.map { it.transform(this, null) },
+                    irFile      = expression.irFile
             )
         } else {
             super.visitBlock(expression)
