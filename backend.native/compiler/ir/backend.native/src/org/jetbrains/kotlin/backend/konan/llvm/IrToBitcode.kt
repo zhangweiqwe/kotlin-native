@@ -1081,7 +1081,7 @@ internal class CodeGeneratorVisitor(val context: Context) : IrElementVisitorVoid
         if (context.shouldContainDebugInfo()) {
             val location = debugLocation(value)
             val functionScope = (currentCodeContext.functionScope() as FunctionScope).declaration?.scope() ?: return
-            val file = (currentCodeContext.fileScope() as FileScope).file.file()
+            val file = (currentCodeContext.fileScope() as FileScope).file!!.file()
             val variable = codegen.vars.load(index)
             val line = value.line()
             codegen.vars.debugInfoLocalVariableLocation(
@@ -1368,7 +1368,7 @@ internal class CodeGeneratorVisitor(val context: Context) : IrElementVisitorVoid
 
     //-------------------------------------------------------------------------//
 
-    private inner class ReturnableBlockScope(val returnableBlock: IrReturnableBlockImpl) : InnerScopeImpl() {
+    private inner class ReturnableBlockScope(val returnableBlock: IrReturnableBlockImpl) : FileScope(returnableBlock.irFile) {
 
         var bbExit : LLVMBasicBlockRef? = null
         var resultPhi : LLVMValueRef? = null
@@ -1404,7 +1404,7 @@ internal class CodeGeneratorVisitor(val context: Context) : IrElementVisitorVoid
 
     //-------------------------------------------------------------------------//
 
-    private inner class FileScope(val file:IrFile) : InnerScopeImpl() {
+    private open inner class FileScope(val file:IrFile?) : InnerScopeImpl() {
         override fun fileScope(): CodeContext? = this
     }
 
@@ -1558,7 +1558,7 @@ internal class CodeGeneratorVisitor(val context: Context) : IrElementVisitorVoid
     }
 
     //-------------------------------------------------------------------------//
-    private fun file() = (currentCodeContext.fileScope() as FileScope).file
+    private fun file() = (currentCodeContext.fileScope() as FileScope).file!!
 
     //-------------------------------------------------------------------------//
     private fun debugLocation(element: IrElement):DILocationRef? {
@@ -1616,7 +1616,7 @@ internal class CodeGeneratorVisitor(val context: Context) : IrElementVisitorVoid
     private fun debugFieldDeclaration(expression: IrField) {
         val scope = currentCodeContext.classScope() as? ClassScope ?: return
         if (!scope.isExported || !context.shouldContainDebugInfo()) return
-        val irFile = (currentCodeContext.fileScope() as FileScope).file
+        val irFile = (currentCodeContext.fileScope() as FileScope).file!!
         val sizeInBits = expression.descriptor.type.size(context)
         scope.offsetInBits += sizeInBits
         val alignInBits = expression.descriptor.type.alignment(context)

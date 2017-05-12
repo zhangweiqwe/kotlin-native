@@ -130,7 +130,7 @@ private class Inliner(val currentScope: ScopeWithIr, val context: Context) {
         val copyStatements = (copyFunctionDeclaration.body as IrBlockBody).statements       // IR statements from function copy.
         val statements     = replaceDelegatingConstructorCall(copyStatements)
         val returnType     = copyFunctionDeclaration.descriptor.returnType!!                // Substituted return type.
-        val irFile         = context.ir.originalModuleIndex.functionToFile[irCall.descriptor]
+        val irFile         = context.ir.originalModuleIndex.functionToFile[irCall.descriptor.original]
         val inlineFunctionBody = IrReturnableBlockImpl(                                     // Create new IR element to replace "call".
             startOffset = copyFunctionDeclaration.startOffset,
             endOffset   = copyFunctionDeclaration.endOffset,
