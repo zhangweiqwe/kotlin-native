@@ -86,3 +86,17 @@ public annotation class FixmeInline
  * Need to be fixed.
  */
 public annotation class Fixme
+
+open class AkmPred
+
+open class Akm(val i1: Int): AkmPred() {
+    open internal var i2: Int = 0
+    fun f1(f1_i1: Int) {}
+}
+
+fun akmFun(i1: Int) {
+
+}
+
+val p1: Int = 1
+var p2: Int = 2

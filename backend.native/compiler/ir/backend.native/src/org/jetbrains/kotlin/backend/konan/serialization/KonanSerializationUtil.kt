@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.backend.konan.serialization
 import org.jetbrains.kotlin.backend.konan.Context
 import org.jetbrains.kotlin.backend.konan.KonanBuiltIns
 import org.jetbrains.kotlin.backend.konan.KonanConfigKeys
+import org.jetbrains.kotlin.backend.konan.ir.PackageFragmentPrinter
 import org.jetbrains.kotlin.backend.konan.library.LinkData
 import org.jetbrains.kotlin.backend.konan.llvm.base64Decode
 import org.jetbrains.kotlin.backend.konan.llvm.base64Encode
@@ -52,6 +53,7 @@ import java.util.zip.GZIPOutputStream
 import java.io.InputStream
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.lang.System.out
 
 /*
  * This is Konan specific part of public descriptor 
@@ -149,6 +151,11 @@ internal fun deserializeModule(languageVersionSettings: LanguageVersionSettings,
         storageManager, 
         moduleDescriptor, deserializationConfiguration)
 
+    val packageFragmentDescriptors = provider.getPackageFragments(FqName("konan"))
+    packageFragmentDescriptors.forEach { packageFragmentDescriptor ->
+        val packageFragment = (packageFragmentDescriptor as KonanPackageFragment).proto
+        PackageFragmentPrinter(packageFragment, out).print()
+    }
     moduleDescriptor.initialize(provider)
 
     return moduleDescriptor
