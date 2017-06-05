@@ -1,10 +1,8 @@
 package org.jetbrains.kotlin.backend.konan.ir
 
-import org.jetbrains.kotlin.backend.konan.serialization.printType
 import org.jetbrains.kotlin.serialization.Flags
 import org.jetbrains.kotlin.serialization.KonanLinkData
 import org.jetbrains.kotlin.serialization.ProtoBuf
-import org.jetbrains.kotlin.serialization.deserialization.supertypes
 import org.jetbrains.kotlin.utils.Printer
 
 //-----------------------------------------------------------------------------//
@@ -14,6 +12,7 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
     val printer            = Printer(out, "  ")
     val stringTable        = packageFragment.stringTable!!
     val qualifiedNameTable = packageFragment.nameTable!!
+    var typeTable: ProtoBuf.TypeTable? = null
 
     //-------------------------------------------------------------------------//
 
@@ -21,6 +20,7 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
         printer.println("\n//--- Classes ----------------------------------------//\n")
         val protoClasses = packageFragment.classes.classesOrBuilderList                     // ProtoBuf classes
         protoClasses.forEach { protoClass ->
+            typeTable = protoClass.typeTable
             printClass(protoClass)
         }
 
@@ -44,44 +44,30 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
     fun printClass(protoClass: ProtoBuf.ClassOrBuilder) {
         val classFqNameId = protoClass.fqName
         val flags         = protoClass.flags
-        val shortName     = getShortName(classFqNameId)
-        val parentName    = getParentName(classFqNameId)
+        val className     = getShortName(classFqNameId)
         val modality      = modalityToString(Flags.MODALITY.get(flags))
-        printer.print("class $modality")
-
-        printTypeParameters(protoClass.typeParameterList)
-        printer.println("$parentName.$shortName {")
-
-        val protoSupertypes = protoClass.supertypeList
-        protoSupertypes.forEach(::printType)
 
         val protoConstructors = protoClass.constructorList
-        protoConstructors.forEach { protoConstructor ->
-            printConstructor(protoConstructor)
-        }
+        val protoFunctions    = protoClass.functionList
+        val protoProperties   = protoClass.propertyList
 
-        val protoFunctions = protoClass.functionList
-        protoFunctions.forEach { protoFunction ->
-            printFunction(protoFunction)
-        }
+        printer.print("class $modality")
+        printer.print(typeParametersToString(protoClass.typeParameterList))
+        printer.print(className)
+        printer.print(primaryConstructorToString(protoConstructors))
+        printer.print(supertypesToString(protoClass.supertypeIdList))
 
-        val protoProperties = protoClass.propertyList
-        protoProperties.forEach { protoProperty ->
-            printProperty(protoProperty)
-        }
-
+        printer.println(" {")
+        printer.print(secondaryConstructorsToString(protoConstructors))
+        protoFunctions.forEach  { printFunction(it) }
+        protoProperties.forEach { printProperty(it) }
         printer.println("}\n")
-    }
 
-    //-------------------------------------------------------------------------//
-
-    fun printConstructor(protoConstructor: ProtoBuf.ConstructorOrBuilder) {
-        val flags          = protoConstructor.flags
-        val visibility     = visibilityToString(Flags.VISIBILITY.get(flags))
-        printer.print("  ${visibility}constructor")
-
-        printValueParameters(protoConstructor.valueParameterList)
-        printer.println()
+        // protoClass.typeAliasList
+        // protoClass.sealedSubclassFqNameList
+        // protoClass.companionObjectName
+        // protoClass.enumEntryList
+        // protoClass.nestedClassNameList
     }
 
     //-------------------------------------------------------------------------//
@@ -93,75 +79,141 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
         val visibility     = visibilityToString(Flags.VISIBILITY.get(flags))
         printer.print("  ${visibility}fun $shortName")
 
-        printTypeParameters(protoFunction.typeParameterList)
-        printValueParameters(protoFunction.valueParameterList)
+        printer.println(typeParametersToString(protoFunction.typeParameterList))
+        printer.println(valueParametersToString(protoFunction.valueParameterList))
         printer.println()
     }
 
     //-------------------------------------------------------------------------//
 
     fun printProperty(protoProperty: ProtoBuf.PropertyOrBuilder) {
-        val flags          = protoProperty.flags
-        val propertyNameId = protoProperty.name
-        val shortName      = stringTable.getString(propertyNameId)
-        val isVar          = if (Flags.IS_VAR.get(flags)) "var" else "val"
-        val modality       = modalityToString(Flags.MODALITY.get(flags))
-        val visibility     = visibilityToString(Flags.VISIBILITY.get(flags))
-        val returnType     = typeToString(protoProperty.returnType)
+        val nameId     = protoProperty.name
+        val name       = stringTable.getString(nameId)
+        val flags      = protoProperty.flags
+        val isVar      = if (Flags.IS_VAR.get(flags)) "var" else "val"
+        val modality   = modalityToString(Flags.MODALITY.get(flags))
+        val visibility = visibilityToString(Flags.VISIBILITY.get(flags))
+        val returnType = typeToString(protoProperty.returnTypeId)
 
-        printer.println("  $modality$visibility$isVar $shortName: $returnType")
+        printer.println("  $modality$visibility$isVar $name: $returnType")
     }
 
     //-------------------------------------------------------------------------//
 
-    fun printTypeParameters(typeParameters: List<ProtoBuf.TypeParameterOrBuilder>) {
-        if (typeParameters.isEmpty()) return
+    fun supertypesToString(supertypesId: List<Int>): String {
+        var buff = ": "
+        supertypesId.dropLast(1).forEach { supertypeId ->
+            val supertype = typeToString(supertypeId)
+            if (supertype != "Any") buff += "$supertype, "
+        }
+        supertypesId.last().let { supertypeId ->
+            val supertype = typeToString(supertypeId)
+            if (supertype != "Any") buff += supertype
+        }
 
-        printer.print("<")
-        typeParameters.dropLast(1).forEach { typeParameter ->
-            printTypeParameter(typeParameter)
-            printer.print(", ")
-        }
-        typeParameters.last().let { typeParameter ->
-            printTypeParameter(typeParameter)
-        }
-        printer.print(">")
+        if (buff == ": ") return ""
+        return buff
     }
 
     //-------------------------------------------------------------------------//
 
-    fun printTypeParameter(protoTypeParameter: ProtoBuf.TypeParameterOrBuilder) {
+    fun primaryConstructorToString(protoConstructors: List<ProtoBuf.ConstructorOrBuilder>): String {
+        val primaryConstructor = protoConstructors.firstOrNull { protoConstructor ->
+            !Flags.IS_SECONDARY.get(protoConstructor.flags)
+        } ?: return ""
+
+        val flags = primaryConstructor.flags
+        val visibility = visibilityToString(Flags.VISIBILITY.get(flags))
+        val valueParameters = constructorValueParametersToString(primaryConstructor.valueParameterList)
+        return "$visibility$valueParameters"
+    }
+
+    //-------------------------------------------------------------------------//
+
+    fun secondaryConstructorsToString(protoConstructors: List<ProtoBuf.ConstructorOrBuilder>): String {
+        val secondaryConstructors = protoConstructors.filter { protoConstructor ->
+            Flags.IS_SECONDARY.get(protoConstructor.flags)
+        }
+
+        var buff = ""
+        secondaryConstructors.forEach { protoConstructor ->
+            val flags       = protoConstructor.flags
+            val visibility  = visibilityToString(Flags.VISIBILITY.get(flags))
+            val valueParameters = valueParametersToString(protoConstructor.valueParameterList)
+            buff += "  ${visibility}constructor$valueParameters\n"
+        }
+        return buff
+    }
+
+    //-------------------------------------------------------------------------//
+
+    fun typeParametersToString(typeParameters: List<ProtoBuf.TypeParameterOrBuilder>): String {
+        if (typeParameters.isEmpty()) return ""
+
+        var buff = "<"
+        typeParameters.dropLast(1).forEach { buff += typeParameterToString(it) + ", " }
+        typeParameters.last().let          { buff += typeParameterToString(it) }
+        buff += "> "
+        return buff
+    }
+
+    //-------------------------------------------------------------------------//
+
+    fun typeParameterToString(protoTypeParameter: ProtoBuf.TypeParameterOrBuilder): String {
         val parameterName = stringTable.getString(protoTypeParameter.name)
-        val upperBounds   = upperBoundsToString(protoTypeParameter.upperBoundList)
+        val upperBounds   = upperBoundsToString(protoTypeParameter.upperBoundIdList)
         val isReified     = if (protoTypeParameter.reified) "reified " else ""
         val variance      = varianceToString(protoTypeParameter.variance)
 
-        printer.print("$isReified$variance$parameterName$upperBounds")
+        return "$isReified$variance$parameterName$upperBounds"
     }
 
     //-------------------------------------------------------------------------//
 
-    fun printValueParameters(valueParameters: List<ProtoBuf.ValueParameterOrBuilder>) {
-        if (valueParameters.isEmpty()) return
+    fun constructorValueParametersToString(valueParameters: List<ProtoBuf.ValueParameterOrBuilder>): String {
+        if (valueParameters.isEmpty()) return ""
 
-        printer.print("(")
+        var buff = "("
         valueParameters.dropLast(1).forEach { valueParameter ->
-            printValueParameter(valueParameter)
-            printer.print(", ")
+            val flags = valueParameter.flags
+            val isVar = if (Flags.IS_VAR.get(flags)) "var" else "val"
+            val parameter = valueParameterToString(valueParameter)
+            buff += "$isVar $parameter, "
         }
         valueParameters.last().let { valueParameter ->
-            printValueParameter(valueParameter)
+            val flags = valueParameter.flags
+            val isVar = if (Flags.IS_VAR.get(flags)) "var" else "val"
+            val parameter = valueParameterToString(valueParameter)
+            buff += "$isVar $parameter"
         }
-        printer.print(")")
+        buff += ")"
+        return buff
     }
 
     //-------------------------------------------------------------------------//
 
-    fun printValueParameter(protoValueParameter: ProtoBuf.ValueParameterOrBuilder) {
-        val parameterName = stringTable.getString(protoValueParameter.name)
-        val type = typeToString(protoValueParameter.type)
+    fun valueParametersToString(valueParameters: List<ProtoBuf.ValueParameterOrBuilder>): String {
+        if (valueParameters.isEmpty()) return ""
 
-        printer.print("$parameterName: $type")
+        var buff = "("
+        valueParameters.dropLast(1).forEach { valueParameter ->
+            val parameter = valueParameterToString(valueParameter)
+            buff += "$parameter, "
+        }
+        valueParameters.last().let { valueParameter ->
+            val parameter = valueParameterToString(valueParameter)
+            buff += parameter
+        }
+        buff += ")"
+        return buff
+    }
+
+    //-------------------------------------------------------------------------//
+
+    fun valueParameterToString(protoValueParameter: ProtoBuf.ValueParameterOrBuilder): String {
+        val parameterName = stringTable.getString(protoValueParameter.name)
+        val type = typeToString(protoValueParameter.typeId)
+        return "$parameterName: $type"
     }
 
     //--- Helpers -------------------------------------------------------------//
@@ -193,18 +245,23 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
 
     //-------------------------------------------------------------------------//
 
-    fun upperBoundsToString(upperBounds: List<ProtoBuf.Type>): String {
+    fun upperBoundsToString(upperBounds: List<Int>): String {
         var buff = ""
         upperBounds.forEach { upperBound ->
-            buff += typeToString(upperBound)
+            buff += ": " + typeToString(upperBound)
         }
         return buff
     }
 
     //-------------------------------------------------------------------------//
 
-    fun typeToString(type: ProtoBuf.Type): String {
-        var buff = "type"
+    fun typeToString(typeId: Int): String {
+        val type        = typeTable!!.getType(typeId)
+        val className   = qualifiedNameTable.getQualifiedName(type.className)
+        val shortNameId = className.shortName
+        val shortName   = stringTable.getString(shortNameId)
+
+        var buff = shortName
         if (type.nullable) buff += "?"
         return buff
     }
