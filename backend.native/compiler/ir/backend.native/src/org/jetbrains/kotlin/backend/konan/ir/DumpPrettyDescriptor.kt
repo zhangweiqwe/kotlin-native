@@ -22,7 +22,16 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
         val protoClasses = packageFragment.classes.classesOrBuilderList                     // ProtoBuf classes
         protoClasses.forEach { protoClass ->
             typeTable = protoClass.typeTable
-            printClass(protoClass)
+            val classKind = Flags.CLASS_KIND.get(protoClass.flags)
+            when (classKind) {
+                ProtoBuf.Class.Kind.CLASS            -> printClass(protoClass)
+                ProtoBuf.Class.Kind.ENUM_CLASS       -> printEnum(protoClass)
+//                ProtoBuf.Class.Kind.INTERFACE        -> TODO()
+//                ProtoBuf.Class.Kind.ENUM_ENTRY       -> TODO()
+//                ProtoBuf.Class.Kind.ANNOTATION_CLASS -> TODO()
+//                ProtoBuf.Class.Kind.OBJECT           -> TODO()
+//                ProtoBuf.Class.Kind.COMPANION_OBJECT -> TODO()
+            }
         }
 
         printer.println("\n//--- Functions --------------------------------------//\n")
@@ -43,9 +52,8 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
     //-------------------------------------------------------------------------//
 
     fun printClass(protoClass: ProtoBuf.ClassOrBuilder) {
-        val classFqNameId = protoClass.fqName
         val flags         = protoClass.flags
-        val className     = getShortName(classFqNameId)
+        val className     = getShortName(protoClass.fqName)
         val modality      = modalityToString(Flags.MODALITY.get(flags))
         val annotations   = protoClass.getExtension(KonanSerializerProtocol.classAnnotation)
 
@@ -53,7 +61,7 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
         val protoFunctions    = protoClass.functionList
         val protoProperties   = protoClass.propertyList
 
-        printer.println(annotationsToString(annotations))
+        printer.print(annotationsToStringLn(annotations))
         printer.print("class $modality")
         printer.print(typeParametersToString(protoClass.typeParameterList))
         printer.print(className)
@@ -69,7 +77,6 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
         // protoClass.typeAliasList
         // protoClass.sealedSubclassFqNameList
         // protoClass.companionObjectName
-        // protoClass.enumEntryList
         // protoClass.nestedClassNameList
     }
 
@@ -81,18 +88,17 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
         val visibility  = visibilityToString(Flags.VISIBILITY.get(flags))
         val annotations = protoFunction.getExtension(KonanSerializerProtocol.functionAnnotation)
 
-        printer.println(annotationsToString(annotations))
+        printer.print(annotationsToStringLn(annotations))
         printer.print("  ${visibility}fun $name")
-        printer.println(typeParametersToString(protoFunction.typeParameterList))
-        printer.println(valueParametersToString(protoFunction.valueParameterList))
+        printer.print(typeParametersToString(protoFunction.typeParameterList))
+        printer.print(valueParametersToString(protoFunction.valueParameterList))
         printer.println()
     }
 
     //-------------------------------------------------------------------------//
 
     fun printProperty(protoProperty: ProtoBuf.PropertyOrBuilder) {
-        val nameId      = protoProperty.name
-        val name        = stringTable.getString(nameId)
+        val name        = stringTable.getString(protoProperty.name)
         val flags       = protoProperty.flags
         val isVar       = if (Flags.IS_VAR.get(flags)) "var" else "val"
         val modality    = modalityToString(Flags.MODALITY.get(flags))
@@ -100,8 +106,35 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
         val returnType  = typeToString(protoProperty.returnTypeId)
         val annotations = protoProperty.getExtension(KonanSerializerProtocol.propertyAnnotation)
 
-        printer.println(annotationsToString(annotations))
+        printer.print(annotationsToStringLn(annotations))
         printer.println("  $modality$visibility$isVar $name: $returnType")
+    }
+
+    //-------------------------------------------------------------------------//
+
+    fun printEnum(protoEnum: ProtoBuf.ClassOrBuilder) {
+        val flags       = protoEnum.flags
+        val enumName    = getShortName(protoEnum.fqName)
+        val modality    = modalityToString(Flags.MODALITY.get(flags))
+        val annotations = protoEnum.getExtension(KonanSerializerProtocol.classAnnotation)
+        val enumEntries = protoEnum.enumEntryList
+
+        printer.print(annotationsToStringLn(annotations))
+        printer.print("enum class $modality")
+        printer.print(enumName)
+
+        printer.println(" {")
+        enumEntries.dropLast(1).forEach { printer.print("    ${enumEntryToString(it)},\n") }
+        enumEntries.last().let          { printer.print("    ${enumEntryToString(it)} \n") }
+        printer.println("}\n")
+    }
+
+    //-------------------------------------------------------------------------//
+
+    fun annotationsToStringLn(protoAnnotations: List<ProtoBuf.Annotation>): String {
+        val annotations = annotationsToString(protoAnnotations)
+        if (annotations.isEmpty()) return ""
+        else return "$annotations\n"
     }
 
     //-------------------------------------------------------------------------//
@@ -141,11 +174,13 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
 
         val flags           = primaryConstructor.flags
         val visibility      = visibilityToString(Flags.VISIBILITY.get(flags))
-        val annotations     = primaryConstructor.getExtension(KonanSerializerProtocol.constructorAnnotation)
+        val annotations     = annotationsToString(primaryConstructor.getExtension(KonanSerializerProtocol.constructorAnnotation))
         val valueParameters = constructorValueParametersToString(primaryConstructor.valueParameterList)
         val name            = if (annotations.isNotEmpty() || visibility.isNotEmpty()) "constructor" else " "
 
-        return "$visibility$annotations$name$valueParameters"
+        val buff = "$visibility$annotations"
+        if (buff.isNotEmpty()) return " ${buff}constructor$valueParameters"
+        else                   return valueParameters
     }
 
     //-------------------------------------------------------------------------//
@@ -234,6 +269,13 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
         val parameterName = stringTable.getString(protoValueParameter.name)
         val type = typeToString(protoValueParameter.typeId)
         return "$parameterName: $type"
+    }
+
+    //-------------------------------------------------------------------------//
+
+    fun enumEntryToString(protoEnumEntry: ProtoBuf.EnumEntry): String {
+        val buff = stringTable.getString(protoEnumEntry.name)
+        return buff
     }
 
     //--- Helpers -------------------------------------------------------------//
