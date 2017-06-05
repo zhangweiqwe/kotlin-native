@@ -1,5 +1,6 @@
 package org.jetbrains.kotlin.backend.konan.ir
 
+import org.jetbrains.kotlin.backend.konan.serialization.KonanSerializerProtocol
 import org.jetbrains.kotlin.serialization.Flags
 import org.jetbrains.kotlin.serialization.KonanLinkData
 import org.jetbrains.kotlin.serialization.ProtoBuf
@@ -47,10 +48,12 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
         val className     = getShortName(classFqNameId)
         val modality      = modalityToString(Flags.MODALITY.get(flags))
 
+        val protoAnnotations  = protoClass.getExtension(KonanSerializerProtocol.classAnnotation)
         val protoConstructors = protoClass.constructorList
         val protoFunctions    = protoClass.functionList
         val protoProperties   = protoClass.propertyList
 
+        printer.print(annotationsToString(protoAnnotations))
         printer.print("class $modality")
         printer.print(typeParametersToString(protoClass.typeParameterList))
         printer.print(className)
@@ -77,8 +80,8 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
         val functionNameId = protoFunction.name
         val shortName      = stringTable.getString(functionNameId)
         val visibility     = visibilityToString(Flags.VISIBILITY.get(flags))
-        printer.print("  ${visibility}fun $shortName")
 
+        printer.print("  ${visibility}fun $shortName")
         printer.println(typeParametersToString(protoFunction.typeParameterList))
         printer.println(valueParametersToString(protoFunction.valueParameterList))
         printer.println()
@@ -96,6 +99,17 @@ class PackageFragmentPrinter(val packageFragment: KonanLinkData.PackageFragment,
         val returnType = typeToString(protoProperty.returnTypeId)
 
         printer.println("  $modality$visibility$isVar $name: $returnType")
+    }
+
+    //-------------------------------------------------------------------------//
+
+    fun annotationsToString(protoAnnotations: List<ProtoBuf.Annotation>): String {
+        var buff = ""
+        protoAnnotations.forEach { protoAnnotation ->
+            val annotation = getShortName(protoAnnotation.id)
+            buff += "@$annotation\n"
+        }
+        return buff
     }
 
     //-------------------------------------------------------------------------//
