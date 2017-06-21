@@ -279,6 +279,7 @@ message IrFunction {
     }
     optional IrStatement body = 1;
     repeated DefaultArgument default_argument = 2;
+    required string file_name = 3;
 }
 
 message IrProperty {
