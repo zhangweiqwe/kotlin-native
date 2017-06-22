@@ -47,6 +47,7 @@ interface IrReturnableBlockSymbol : IrFunctionSymbol, IrBindableSymbol<FunctionD
 interface IrReturnableBlock: IrBlock, IrSymbolOwner {
     override val symbol: IrReturnableBlockSymbol
     val descriptor: FunctionDescriptor
+    val sourceFileName: String
 }
 
 class IrReturnableBlockSymbolImpl(descriptor: FunctionDescriptor) :
@@ -54,24 +55,23 @@ class IrReturnableBlockSymbolImpl(descriptor: FunctionDescriptor) :
         IrReturnableBlockSymbol
 
 class IrReturnableBlockImpl(startOffset: Int, endOffset: Int, type: KotlinType,
-                            override val symbol: IrReturnableBlockSymbol, origin: IrStatementOrigin? = null)
+                            override val symbol: IrReturnableBlockSymbol, origin: IrStatementOrigin? = null, override val sourceFileName: String = "no source file")
     : IrContainerExpressionBase(startOffset, endOffset, type, origin), IrReturnableBlock {
-
     override val descriptor = symbol.descriptor
 
     constructor(startOffset: Int, endOffset: Int, type: KotlinType,
-                symbol: IrReturnableBlockSymbol, origin: IrStatementOrigin?, statements: List<IrStatement>) :
-            this(startOffset, endOffset, type, symbol, origin) {
+                symbol: IrReturnableBlockSymbol, origin: IrStatementOrigin?, statements: List<IrStatement>, sourceFileName: String = "no source file") :
+            this(startOffset, endOffset, type, symbol, origin, sourceFileName) {
         this.statements.addAll(statements)
     }
 
     constructor(startOffset: Int, endOffset: Int, type: KotlinType,
-                descriptor: FunctionDescriptor, origin: IrStatementOrigin? = null) :
-            this(startOffset, endOffset, type, IrReturnableBlockSymbolImpl(descriptor), origin)
+                descriptor: FunctionDescriptor, origin: IrStatementOrigin? = null, sourceFileName: String = "no source file") :
+            this(startOffset, endOffset, type, IrReturnableBlockSymbolImpl(descriptor), origin, sourceFileName)
 
     constructor(startOffset: Int, endOffset: Int, type: KotlinType,
-                descriptor: FunctionDescriptor, origin: IrStatementOrigin?, statements: List<IrStatement>) :
-        this(startOffset, endOffset, type, descriptor, origin) {
+                descriptor: FunctionDescriptor, origin: IrStatementOrigin?, statements: List<IrStatement>, sourceFileName: String = "no source file") :
+        this(startOffset, endOffset, type, descriptor, origin, sourceFileName) {
         this.statements.addAll(statements)
     }
 
