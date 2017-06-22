@@ -19,10 +19,7 @@ package org.jetbrains.kotlin.backend.konan.ir
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.ir.IrElement
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.ir.declarations.IrFunction
-import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
@@ -39,7 +36,7 @@ class ModuleIndex(val module: IrModuleFragment) {
      * Contains all functions declared in [module]
      */
     val functions = mutableMapOf<FunctionDescriptor, IrFunction>()
-    val functionToFile = mutableMapOf<FunctionDescriptor, IrFile>()
+    val functionToFile = mutableMapOf<FunctionDescriptor, String>()
 
     init {
         val map = mutableMapOf<ClassDescriptor, IrClass>()
@@ -65,7 +62,7 @@ class ModuleIndex(val module: IrModuleFragment) {
 
                 val functionDescriptor = declaration.descriptor
                 functions[functionDescriptor] = declaration
-                functionToFile[functionDescriptor] = currentFile!!
+                functionToFile[functionDescriptor] = currentFile!!.name
             }
 
         })

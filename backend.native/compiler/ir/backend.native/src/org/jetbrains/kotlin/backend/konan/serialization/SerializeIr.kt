@@ -513,8 +513,7 @@ internal class IrSerializer(val context: Context,
             }
         }
 
-        val irFile = context.ir.originalModuleIndex.functionToFile[function.descriptor]
-        val fileName = irFile!!.name.toString()
+        val fileName = context.ir.originalModuleIndex.functionToFile[function.descriptor]
         proto.setFileName(fileName)
 
         return proto.build()

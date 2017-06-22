@@ -17,7 +17,13 @@
 package org.jetbrains.kotlin.backend.konan.ir
 
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.SourceManager
+import org.jetbrains.kotlin.ir.SourceRangeInfo
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrSymbolOwner
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrBlock
@@ -26,11 +32,13 @@ import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
 import org.jetbrains.kotlin.ir.expressions.impl.IrContainerExpressionBase
 import org.jetbrains.kotlin.ir.expressions.impl.IrExpressionBase
 import org.jetbrains.kotlin.ir.symbols.IrBindableSymbol
+import org.jetbrains.kotlin.ir.symbols.IrFileSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrBindableSymbolBase
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformer
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
 import org.jetbrains.kotlin.types.KotlinType
+import java.io.File
 
 //-----------------------------------------------------------------------------//
 
@@ -82,6 +90,80 @@ class IrReturnableBlockImpl(startOffset: Int, endOffset: Int, type: KotlinType,
         statements.forEachIndexed { i, irStatement ->
             statements[i] = irStatement.transform(transformer, data)
         }
+    }
+}
+
+//-----------------------------------------------------------------------------//
+
+class FileEntryImpl(override val name: String) : SourceManager.FileEntry {
+
+    private val lineStartOffsets: IntArray
+
+    //-------------------------------------------------------------------------//
+
+    init {
+        val file = File(name)
+        val buffer = mutableListOf<Int>()
+        var currentOffset = 0
+        file.forEachLine { line ->
+            buffer.add(currentOffset)
+            currentOffset += line.length
+        }
+        lineStartOffsets = buffer.toIntArray()
+    }
+
+    //-------------------------------------------------------------------------//
+
+    override fun getLineNumber(offset: Int): Int {
+        val index = lineStartOffsets.binarySearch(offset)
+        return if (index >= 0) index else -index - 1
+    }
+
+    //-------------------------------------------------------------------------//
+
+    override fun getColumnNumber(offset: Int): Int {
+        val lineNumber = getLineNumber(offset)
+        return offset - lineStartOffsets[lineNumber]
+    }
+
+    //-------------------------------------------------------------------------//
+
+    override val maxOffset: Int
+        get() = TODO("not implemented")
+
+    override fun getSourceRangeInfo(beginOffset: Int, endOffset: Int): SourceRangeInfo {
+        TODO("not implemented")
+    }
+}
+
+//-----------------------------------------------------------------------------//
+
+class IrFileImpl(fileName: String) : IrFile {
+
+    override val fileEntry = FileEntryImpl(fileName)
+
+    //-------------------------------------------------------------------------//
+
+    override val fileAnnotations: MutableList<AnnotationDescriptor>
+        get() = TODO("not implemented")
+    override val symbol: IrFileSymbol
+        get() = TODO("not implemented")
+    override val packageFragmentDescriptor: PackageFragmentDescriptor
+        get() = TODO("not implemented")
+    override val endOffset: Int
+        get() = TODO("not implemented")
+    override val startOffset: Int
+        get() = TODO("not implemented")
+    override val declarations: MutableList<IrDeclaration>
+        get() = TODO("not implemented")
+    override fun <D> acceptChildren(visitor: IrElementVisitor<Unit, D>, data: D) {
+        TODO("not implemented")
+    }
+    override fun <D> transformChildren(transformer: IrElementTransformer<D>, data: D) {
+        TODO("not implemented")
+    }
+    override fun <R, D> accept(visitor: IrElementVisitor<R, D>, data: D): R {
+        TODO("not implemented")
     }
 }
 
