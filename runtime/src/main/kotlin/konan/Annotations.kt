@@ -86,3 +86,5 @@ public annotation class FixmeInline
  * Need to be fixed.
  */
 public annotation class Fixme
+
+inline fun akmFoo(i: Int) = i + 1
