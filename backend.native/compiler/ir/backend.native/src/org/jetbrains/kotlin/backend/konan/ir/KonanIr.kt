@@ -103,13 +103,18 @@ class FileEntryImpl(override val name: String) : SourceManager.FileEntry {
 
     init {
         val file = File(name)
-        val buffer = mutableListOf<Int>()
-        var currentOffset = 0
-        file.forEachLine { line ->
-            buffer.add(currentOffset)
-            currentOffset += line.length
+        if (file.isFile) {
+            val buffer = mutableListOf<Int>()
+            var currentOffset = 0
+            file.forEachLine { line ->
+                buffer.add(currentOffset)
+                currentOffset += line.length
+            }
+            lineStartOffsets = buffer.toIntArray()
+        } else {
+            println("file not found: $name")
+            lineStartOffsets = IntArray(0)
         }
-        lineStartOffsets = buffer.toIntArray()
     }
 
     //-------------------------------------------------------------------------//
@@ -122,7 +127,13 @@ class FileEntryImpl(override val name: String) : SourceManager.FileEntry {
     //-------------------------------------------------------------------------//
 
     override fun getColumnNumber(offset: Int): Int {
-        val lineNumber = getLineNumber(offset)
+        var lineNumber = getLineNumber(offset)
+        if (lineNumber >= lineStartOffsets.size) {
+            println("too big line number")
+            lineNumber = lineStartOffsets.size - 1
+        }
+        if (lineNumber < 0) lineNumber = 0
+        if (lineStartOffsets.size == 0) return offset
         return offset - lineStartOffsets[lineNumber]
     }
 

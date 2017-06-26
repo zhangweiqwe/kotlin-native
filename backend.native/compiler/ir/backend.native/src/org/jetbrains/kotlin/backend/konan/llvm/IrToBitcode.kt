@@ -1429,7 +1429,7 @@ internal class CodeGeneratorVisitor(val context: Context) : IrElementVisitorVoid
 
     //-------------------------------------------------------------------------//
 
-    private inner class ReturnableBlockScope(val returnableBlock: IrReturnableBlockImpl) : InnerScopeImpl() {
+    private inner class ReturnableBlockScope(val returnableBlock: IrReturnableBlockImpl) : FileScope(IrFileImpl(returnableBlock.sourceFileName)) {
 
         var bbExit : LLVMBasicBlockRef? = null
         var resultPhi : LLVMValueRef? = null
@@ -1465,7 +1465,7 @@ internal class CodeGeneratorVisitor(val context: Context) : IrElementVisitorVoid
 
     //-------------------------------------------------------------------------//
 
-    private inner class FileScope(val file:IrFile) : InnerScopeImpl() {
+    private open inner class FileScope(val file:IrFile) : InnerScopeImpl() {
         override fun fileScope(): CodeContext? = this
     }
 
@@ -1494,6 +1494,7 @@ internal class CodeGeneratorVisitor(val context: Context) : IrElementVisitorVoid
     private fun evaluateReturnableBlock(value: IrReturnableBlockImpl): LLVMValueRef {
         context.log{"evaluateReturnableBlock         : ${value.statements.forEach { ir2string(it) }}"}
 
+        println(value.sourceFileName)
         val returnableBlockScope = ReturnableBlockScope(value)
         using(returnableBlockScope) {
             using(VariableScope()) {
@@ -1628,9 +1629,11 @@ internal class CodeGeneratorVisitor(val context: Context) : IrElementVisitorVoid
         val scope         = functionScope.declaration ?: return null
         val diScope       = scope.scope()
         @Suppress("UNCHECKED_CAST")
+        val line = element.line()
+        val column = element.column()
         return codegen.debugLocation(LocationInfo(
-                line   = element.line(),
-                column = element.column(),
+                line   = line,
+                column = column,
                 scope  = diScope as DIScopeOpaqueRef))
     }
 
