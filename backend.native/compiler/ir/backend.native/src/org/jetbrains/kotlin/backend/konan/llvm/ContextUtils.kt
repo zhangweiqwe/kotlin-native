@@ -260,7 +260,7 @@ internal class Llvm(val context: Context, val llvmModule: LLVMModuleRef) {
     val appendToInitalizersTail = importRtFunction("AppendToInitializersTail")
 
     private val personalityFunctionName = when (context.config.targetManager.target) {
-        KonanTarget.MINGW -> "__gxx_personality_seh0"
+        KonanTarget.MINGW_X8664 -> "__gxx_personality_seh0"
         else -> "__gxx_personality_v0"
     }
 

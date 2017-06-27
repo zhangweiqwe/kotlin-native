@@ -189,14 +189,13 @@ internal class LinkStage(val context: Context) {
     private val distribution = context.config.distribution
 
     val platform = when (context.config.targetManager.target) {
-        KonanTarget.LINUX, KonanTarget.RASPBERRYPI ->
+        KonanTarget.LINUX_X8664, KonanTarget.LINUX_ARM32 ->
             LinuxBasedPlatform(distribution)
-        KonanTarget.MACBOOK, KonanTarget.IPHONE, KonanTarget.IPHONE_SIM ->
+        KonanTarget.OSX_X8664, KonanTarget.IPHONE_ARM64, KonanTarget.IPHONESIM_X8664 ->
             MacOSBasedPlatform(distribution)
         KonanTarget.ANDROID_ARM32, KonanTarget.ANDROID_ARM64 ->
             AndroidPlatform(distribution)
-        KonanTarget.MINGW ->
-            MingwPlatform(distribution)
+        KonanTarget.MINGW_X8664 -> MingwPlatform(distribution)
         else ->
             error("Unexpected target platform: ${context.config.targetManager.target}")
     }

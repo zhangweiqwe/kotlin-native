@@ -103,23 +103,14 @@ void setupCompilationFlags() {
     ext.targetArgs <<
         [(ext.host):
            ["--sysroot=${gccToolchainDir}/${gnuTriplet}/sysroot",
-            "-DUSE_GCC_UNWIND=1", "-DUSE_ELF_SYMBOLS=1", "-DELFSIZE=64"],
-         "raspberrypi":
-           ["-target", getTargetArg("raspberrypi"),
-            "-mfpu=vfp", "-mfloat-abi=hard",
-            "-DUSE_GCC_UNWIND=1", "-DUSE_ELF_SYMBOLS=1", "-DELFSIZE=32",
-            "--sysroot=$raspberrypiSysrootDir",
-            // TODO: those two are hacks.
-            "-I$raspberrypiSysrootDir/usr/include/c++/4.8.3",
-            "-I$raspberrypiSysrootDir/usr/include/c++/4.8.3/arm-linux-gnueabihf"]
-        ]
+            "-DUSE_GCC_UNWIND=1", "-DUSE_ELF_SYMBOLS=1", "-DELFSIZE=64"]]
     } else if (isWindows()) {
         ext.host = "mingw"
         ext.targetArgs <<
                 [(ext.host):
                          ["-target", "x86_64-w64-mingw32", "--sysroot=${mingwWithLlvmDir}",
                           "-DUSE_GCC_UNWIND=1", "-DUSE_PE_COFF_SYMBOLS=1", "-DKONAN_WINDOWS=1"]]
-    } else {
+    } else if (isMac()) {
          ext.host = "macbook"
          ext.targetArgs <<
             [(ext.host):
@@ -131,7 +122,9 @@ void setupCompilationFlags() {
 //             "iphone_sim":
 //                ["-stdlib=libc++", "-isysroot", "$iphoneSimSysrootDir", "-miphoneos-version-min=8.0.0"],
             ]
-     }
+     } else {
+        throw Error("Unsupported build platform!")
+    }
 
      if (isLinux() || isMac()) {
          ext.targetArgs << [
@@ -148,8 +141,15 @@ void setupCompilationFlags() {
                          "-D__ANDROID__", "-DUSE_GCC_UNWIND=1", "-DUSE_ELF_SYMBOLS=1", "-DELFSIZE=64", "-DKONAN_ANDROID",
                          // HACKS!
                          "-I$android_arm64SysrootDir/usr/include/c++/4.9.x",
-                         "-I$android_arm64SysrootDir/usr/include/c++/4.9.x/aarch64-linux-android"]
-
+                         "-I$android_arm64SysrootDir/usr/include/c++/4.9.x/aarch64-linux-android"],
+                 "raspberrypi":
+                         ["-target", getTargetArg("raspberrypi"),
+                          "-mfpu=vfp", "-mfloat-abi=hard",
+                          "-DUSE_GCC_UNWIND=1", "-DUSE_ELF_SYMBOLS=1", "-DELFSIZE=32",
+                          "--sysroot=$raspberrypiSysrootDir",
+                          // TODO: those two are hacks.
+                          "-I$raspberrypiSysrootDir/usr/include/c++/4.8.3",
+                          "-I$raspberrypiSysrootDir/usr/include/c++/4.8.3/arm-linux-gnueabihf"]
          ]
     }
 

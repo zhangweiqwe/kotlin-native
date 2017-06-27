@@ -193,6 +193,7 @@ class HelperNativeDep extends TgzNativeDep {
     }
 }
 
+// TODO: use TargetManager here!
 static String substituteName(String name) {
     switch (name) {
         case "macbook": return "osx"
@@ -240,8 +241,6 @@ if (isLinux()) {
     }
 
     dependencyTask("linux", LIBFFI)
-    dependencyTask("raspberrypi", SYSROOT)
-    dependencyTask("raspberrypi", LIBFFI)
 } else if (isWindows()) {
     task mingwWithLlvm(type: HelperNativeDep) {
         baseName = "msys2-mingw-w64-x86_64-gcc-6.3.0-clang-llvm-3.9.1-$host"
@@ -267,6 +266,8 @@ if (isLinux() || isMac()) {
     dependencyTask("android_arm32", LIBFFI)
     dependencyTask("android_arm64", SYSROOT)
     dependencyTask("android_arm64", LIBFFI)
+    dependencyTask("raspberrypi", SYSROOT)
+    dependencyTask("raspberrypi", LIBFFI)
 }
 
 task update(type: Copy) {
