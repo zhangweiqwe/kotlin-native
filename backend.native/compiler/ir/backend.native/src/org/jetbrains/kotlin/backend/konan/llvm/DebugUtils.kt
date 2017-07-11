@@ -221,7 +221,6 @@ internal fun KotlinType.encoding(context:Context):DwarfTypeKind = when {
     KotlinBuiltIns.isChar(this)                   -> DwarfTypeKind.DW_ATE_unsigned
     (!KotlinBuiltIns.isPrimitiveType(this))       -> DwarfTypeKind.DW_ATE_address
     else                                          -> TODO(toString())
-
 }
 
 internal fun alignTo(value:Long, align:Long):Long = (value + align - 1) / align * align
