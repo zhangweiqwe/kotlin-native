@@ -2300,7 +2300,7 @@ if (isMac()) {
  */
 
 task buildKonanStdlibTests(type: BuildKonanTest) {
-    compileList = [ "stdlib_external" ]
+    compileList = [ "stdlib_external", "testUtils.kt" ]
 }
 
 task buildKonanTests(type: BuildKonanTest) {
