@@ -23,6 +23,7 @@ import org.gradle.process.ExecResult
 import org.jetbrains.kotlin.konan.target.*
 import org.jetbrains.kotlin.konan.properties.*
 
+import javax.inject.Inject
 import java.util.regex.Pattern
 
 abstract class KonanTest extends JavaExec {
@@ -383,10 +384,26 @@ class BuildKonanTest extends ExtKonanTest {
  * Runs test built with Konan's TestRunner
  */
 class RunKonanTest extends ExtKonanTest {
+    public def dependency = 'buildKonanTests'
+    public def runnerLogger = Logger.SILENT
+    public def useFilter = true
 
+    enum Logger {
+        GTEST,
+        TEAMCITY,
+        SIMPLE,
+        SILENT
+    }
+
+    @Inject
     RunKonanTest() {
         super()
-        dependsOn('buildKonanTests')
+        dependsOn(dependency)
+    }
+
+    RunKonanTest(def depends) {
+        dependency = depends
+        dependsOn(dependency)
     }
 
     @Override
@@ -399,8 +416,10 @@ class RunKonanTest extends ExtKonanTest {
     void executeTest() {
         arguments = arguments ?: []
         // Print only test's output
-        arguments.add("--ktest_logger=SILENT")
-        arguments.add("--ktest_filter=" + convertToPattern(source))
+        arguments.add("--ktest_logger=" + runnerLogger.toString())
+        if (useFilter) {
+            arguments.add("--ktest_filter=" + convertToPattern(source))
+        }
         super.executeTest()
     }
 
@@ -408,6 +427,13 @@ class RunKonanTest extends ExtKonanTest {
         return source.replace('/', '.')
                 .replace(".kt", "")
                 .concat(".*")
+    }
+}
+
+class RunStdlibTest extends RunKonanTest {
+
+    RunStdlibTest() {
+        super('buildKonanStdlibTests')
     }
 }
 
