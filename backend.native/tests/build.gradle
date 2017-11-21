@@ -2297,14 +2297,6 @@ if (isMac()) {
     }
 }
 
-/**
- * TODO: The following tests are commented:
- *
- *
- *
- *
- */
-
 task buildKonanStdlibTests(type: BuildKonanTest) {
     outputSourceSetName = "testOutputStdlib"
     compileList = [ "stdlib_external", "testUtils.kt" ]
