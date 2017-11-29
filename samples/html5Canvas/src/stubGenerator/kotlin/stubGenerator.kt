@@ -35,6 +35,7 @@ fun Type.toKotlinType(argName: String? = null): String {
         is Void -> "Unit"
         is Integer -> "Int"
         is Floating -> "Float"
+        is idlDouble -> "Double"
         is idlString -> "String"
         is Object -> "JsValue"
         is Function -> "KtFunction<R${argName!!}>"
@@ -48,6 +49,7 @@ fun Arg.wasmMapping(): String {
         is Void -> error("An arg can not be Void")
         is Integer -> name
         is Floating -> name
+        is idlDouble -> "doubleUpper($name), doubleLower($name)"
         is idlString -> "stringPointer($name), stringLengthBytes($name)"
         is Object -> TODO("implement me")
         is Function -> "wrapFunction<R$name>($name), ArenaManager.currentArena"
@@ -63,6 +65,7 @@ fun Arg.wasmArgNames(): List<String> {
         is Void -> error("An arg can not be Void")
         is Integer -> listOf(name)
         is Floating -> listOf(name)
+        is idlDouble -> listOf(${name}Upper", "${name}Lower")
         is idlString -> listOf("${name}Ptr", "${name}Len")
         is Object -> TODO("implement me (Object)")
         is Function -> listOf("${name}Index", "${name}ResultArena")
@@ -76,6 +79,7 @@ fun Type.wasmReturnMapping(value: String): String {
         is Void -> ""
         is Integer -> value
         is Floating -> value
+        is idlDouble -> "Heap($value, 8).toDouble()"
         is idlString -> "TODO(\"Implement me\")"
         is Object -> "JsValue(ArenaManager.currentArena, $value)"
         is Function -> "TODO(\"Implement me\")"
@@ -256,6 +260,7 @@ fun Arg.composeWasmArgs(): String {
         is Void -> error("An arg can not be Void")
         is Integer -> ""
         is Floating -> ""
+        is idlDouble -> "    $name = toDouble(${name}Upper, ${name}Lower);\n"
         is idlString -> "    $name = toUTF16String(${name}Ptr, ${name}Len);\n"
         is Object -> TODO("implement me")
         is Function -> "    $name = konan_dependencies.env.Konan_js_wrapLambda(lambdaResultArena, ${name}Index);\n"

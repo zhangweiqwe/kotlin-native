@@ -95,6 +95,10 @@ function toUTF16String(pointer, size) {
     return string;
 }
 
+function twoIntsToDouble(upper, lower) {
+    
+}
+
 function int32ToHeap(value, pointer) {
     heap[pointer]   = value & 0xff;
     heap[pointer+1] = (value & 0xff00) >>> 8;
