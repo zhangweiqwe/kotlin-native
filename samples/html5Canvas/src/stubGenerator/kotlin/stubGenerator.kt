@@ -7,12 +7,13 @@ import platform.posix.*
 interface Type 
 interface Member
 
-object Void: Type
-object Integer: Type
-object Floating: Type
+object idlVoid: Type
+object idlInt: Type
+object idlFloat: Type
+object idlDouble: Type
 object idlString: Type
-object Object: Type
-object Function: Type
+object idlObject: Type
+object idlFunction: Type
 
 data class Attribute(val name: String, val type: Type, 
     val readOnly: Boolean = false): Member
@@ -21,7 +22,7 @@ data class Arg(val name: String, val type: Type)
 
 class Operation(val name: String, val returnType: Type, vararg val args: Arg): Member
 
-class InterfaceRef(val name: String): Type
+data class idlInterfaceRef(val name: String): Type
 class Interface(val name: String, vararg val members: Member)
 
 fun kotlinHeader(): String {
@@ -32,28 +33,28 @@ fun kotlinHeader(): String {
 
 fun Type.toKotlinType(argName: String? = null): String {
     return when (this) {
-        is Void -> "Unit"
-        is Integer -> "Int"
-        is Floating -> "Float"
+        is idlVoid -> "Unit"
+        is idlInt -> "Int"
+        is idlFloat -> "Float"
         is idlDouble -> "Double"
         is idlString -> "String"
-        is Object -> "JsValue"
-        is Function -> "KtFunction<R${argName!!}>"
-        is InterfaceRef -> name
+        is idlObject -> "JsValue"
+        is idlFunction -> "KtFunction<R${argName!!}>"
+        is idlInterfaceRef -> name
         else -> error("Unexpected type")
     }
 }
 
 fun Arg.wasmMapping(): String {
     return when (type) {
-        is Void -> error("An arg can not be Void")
-        is Integer -> name
-        is Floating -> name
+        is idlVoid -> error("An arg can not be idlVoid")
+        is idlInt -> name
+        is idlFloat -> name
         is idlDouble -> "doubleUpper($name), doubleLower($name)"
         is idlString -> "stringPointer($name), stringLengthBytes($name)"
-        is Object -> TODO("implement me")
-        is Function -> "wrapFunction<R$name>($name), ArenaManager.currentArena"
-        is InterfaceRef -> TODO("Implement me")
+        is idlObject -> TODO("implement me")
+        is idlFunction -> "wrapFunction<R$name>($name), ArenaManager.currentArena"
+        is idlInterfaceRef -> TODO("Implement me")
         else -> error("Unexpected type")
     }
 }
@@ -62,28 +63,28 @@ fun Interface.wasmReturnArg(): String = "ArenaManager.currentArena"
 
 fun Arg.wasmArgNames(): List<String> {
     return when (type) {
-        is Void -> error("An arg can not be Void")
-        is Integer -> listOf(name)
-        is Floating -> listOf(name)
-        is idlDouble -> listOf(${name}Upper", "${name}Lower")
+        is idlVoid -> error("An arg can not be idlVoid")
+        is idlInt -> listOf(name)
+        is idlFloat -> listOf(name)
+        is idlDouble -> listOf("${name}Upper", "${name}Lower")
         is idlString -> listOf("${name}Ptr", "${name}Len")
-        is Object -> TODO("implement me (Object)")
-        is Function -> listOf("${name}Index", "${name}ResultArena")
-        is InterfaceRef -> TODO("Implement me (InterfaceRef)")
+        is idlObject -> TODO("implement me (idlObject)")
+        is idlFunction -> listOf("${name}Index", "${name}ResultArena")
+        is idlInterfaceRef -> TODO("Implement me (idlInterfaceRef)")
         else -> error("Unexpected type")
     }
 }
 
 fun Type.wasmReturnMapping(value: String): String {
     return when (this) {
-        is Void -> ""
-        is Integer -> value
-        is Floating -> value
-        is idlDouble -> "Heap($value, 8).toDouble()"
+        is idlVoid -> ""
+        is idlInt -> value
+        is idlFloat -> value
+        is idlDouble -> "heapDouble($value)"
         is idlString -> "TODO(\"Implement me\")"
-        is Object -> "JsValue(ArenaManager.currentArena, $value)"
-        is Function -> "TODO(\"Implement me\")"
-        is InterfaceRef -> "$name(ArenaManager.currentArena, $value)"
+        is idlObject -> "JsValue(ArenaManager.currentArena, $value)"
+        is idlFunction -> "TODO(\"Implement me\")"
+        is idlInterfaceRef -> "$name(ArenaManager.currentArena, $value)"
         else -> error("Unexpected type")
     }
 }
@@ -98,7 +99,7 @@ fun wasmGetterName(propertyName: String, interfaceName: String)
     = "knjs_get__${interfaceName}_$propertyName"
 
 val Operation.kotlinTypeParameters: String get() {
-    val lambdaRetTypes = args.filter { it.type is Function }
+    val lambdaRetTypes = args.filter { it.type is idlFunction }
         .map { "R${it.name}" }. joinToString(", ")
     return if (lambdaRetTypes == "") "" else "<$lambdaRetTypes>"
 }
@@ -119,9 +120,9 @@ fun Operation.generateKotlin(parent: Interface): String {
     return "  fun $kotlinTypeParameters $name(" + 
     argList + 
     "): ${returnType.toKotlinType()} {\n" +
-
-    "    ${if (returnType != Void) "val wasmRetVal = " else ""}${wasmFunctionName(name, parent.name)}($wasmArgList)\n" +
-
+    "    ${if (returnType == idlDouble) "val resultPtr = allocateDouble()" else ""}\n" +
+    "    ${if (returnType != idlVoid) "val wasmRetVal = " else ""}${wasmFunctionName(name, parent.name)}($wasmArgList)\n" +
+    "    ${if (returnType == idlDouble) "deallocateDouble(resultPtr)" else ""}\n" +
     "    return ${returnType.wasmReturnMapping("wasmRetVal")}\n"+
     "  }\n"
 }
@@ -199,8 +200,8 @@ fun Member.generateWasmStub(parent: Interface) =
 fun Arg.wasmTypedMapping() 
     = this.wasmArgNames().map { "$it: Int" } .joinToString(", ")
 
-fun Interface.wasmTypedReturnMapping() 
-    = "resultArena: Int"
+fun Interface.wasmTypedReturnMapping(): String =
+    "resultArena: Int"
 
 fun List<Arg>.wasmTypedMapping()
     = this.map{ it.wasmTypedMapping() }
@@ -208,7 +209,7 @@ fun List<Arg>.wasmTypedMapping()
 // TODO: more complex return types, such as returning a pair of Ints
 // will require a more complex approach.
 fun Type.wasmReturnTypeMapping()
-    = if (this == Void) "Unit" else "Int"
+    = if (this == idlVoid) "Unit" else "Int"
 
 fun Interface.generateMemberWasmStubs() =
     members.map {
@@ -257,21 +258,58 @@ fun generateKotlin(interfaces: List<Interface>) =
 
 fun Arg.composeWasmArgs(): String {
     return when (type) {
-        is Void -> error("An arg can not be Void")
-        is Integer -> ""
-        is Floating -> ""
-        is idlDouble -> "    $name = toDouble(${name}Upper, ${name}Lower);\n"
-        is idlString -> "    $name = toUTF16String(${name}Ptr, ${name}Len);\n"
-        is Object -> TODO("implement me")
-        is Function -> "    $name = konan_dependencies.env.Konan_js_wrapLambda(lambdaResultArena, ${name}Index);\n"
+        is idlVoid -> error("An arg can not be idlVoid")
+        is idlInt -> ""
+        is idlFloat -> ""
+        is idlDouble -> 
+            "    var $name = twoIntstoDouble(${name}Upper, ${name}Lower);\n"
+        is idlString -> 
+            "    var $name = toUTF16String(${name}Ptr, ${name}Len);\n"
+        is idlObject -> TODO("implement me")
+        is idlFunction -> 
+            "    var $name = konan_dependencies.env.Konan_js_wrapLambda(lambdaResultArena, ${name}Index);\n"
 
-        is InterfaceRef -> TODO("Implement me")
+        is idlInterfaceRef -> TODO("Implement me")
         else -> error("Unexpected type")
     }
 }
 
 val Interface.receiver get() = 
     if (this.name == "__Global") "" else  "kotlinObject(arena, obj)."
+
+
+val Interface.wasmReceiverArgName get() =
+    if (this.name != "__Global") listOf("arena", "obj") else emptyList()
+
+val Operation.wasmReturnArgName get() = 
+    returnType.wasmReturnArgName
+
+val Attribute.wasmReturnArgName get() = 
+    type.wasmReturnArgName
+
+val Type.wasmReturnArgName get() =
+    when (this) {
+        is idlVoid -> emptyList()
+        is idlInt -> emptyList()
+        is idlFloat -> emptyList()
+        is idlDouble -> listOf("resultPtr")
+        is idlString -> listOf("resultArena")
+        is idlObject -> listOf("resultArena")
+        is idlInterfaceRef -> listOf("resultArena")
+        else -> error("Unexpected type: $this")
+    }
+
+val Type.wasmReturnExpression get() =
+    when(this) {
+        is idlVoid -> ""
+        is idlInt -> "result"
+        is idlFloat -> "result" // TODO: can we really pass floats as is?
+        is idlDouble -> "doubleToHeap(resultPtr, result)"
+        is idlString -> "toArena(resultArena, result)"
+        is idlObject -> "toArena(resultArena, result)"
+        is idlInterfaceRef -> "toArena(resultArena, result)"
+        else -> error("Unexpected type: $this")
+    }
 
 fun Operation.generateJs(parent: Interface): String {
     val allArgs = parent.wasmReceiverArgName + args.map { it.wasmArgNames() }.flatten() + wasmReturnArgName
@@ -282,18 +320,9 @@ fun Operation.generateJs(parent: Interface): String {
     return "\n  ${wasmFunctionName(this.name, parent.name)}: function($wasmMapping) {\n" +
         composedArgsList +
         "    var result = ${parent.receiver}$name($argList);\n" +
-        (if (returnType == Void) "" else  "    return toArena(resultArena, result);\n") +
+        "    return ${returnType.wasmReturnExpression};\n" +
     "  }"
 }
-
-val Interface.wasmReceiverArgName get() =
-    if (this.name != "__Global") listOf("arena", "obj") else emptyList()
-
-val Operation.wasmReturnArgName get() =
-    if (this.returnType != Void) listOf("resultArena") else emptyList()
-
-val Attribute.wasmReturnArgName get() =
-    if (this.type != Void) listOf("resultArena") else emptyList()
 
 fun Attribute.generateJsSetter(parent: Interface): String {
     val valueArg = Arg("value", type)
@@ -310,7 +339,7 @@ fun Attribute.generateJsGetter(parent: Interface): String {
     val wasmMapping = allArgs.joinToString(", ")
     return "\n  ${wasmGetterName(name, parent.name)}: function($wasmMapping) {\n" +
         "    var result = ${parent.receiver}$name;\n" +
-        "    return toArena(resultArena, result);\n" +
+        "    return ${type.wasmReturnExpression};\n" +
     "  }"
 }
 

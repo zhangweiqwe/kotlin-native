@@ -16,6 +16,24 @@ external public fun freeArena(arena: Arena)
 @SymbolName("Konan_js_pushIntToArena")
 external public fun pushIntToArena(arena: Arena, value: Int)
 
+const val upperWord = 0xffffffff.toLong() shl 32
+
+fun doubleUpper(value: Double): Int =
+    ((value.toBits() and upperWord) ushr 32) .toInt()
+
+fun doubleLower(value: Double): Int =
+    (value.toBits() and 0x00000000ffffffff) .toInt()
+
+external fun heapDouble(pointer: Int): Double// = 
+    //pointer.toLong().toCPointer<DoubleVar>()!!.value
+
+fun allocateDouble(): Int =
+    // TODO: LP64 unsafe, but wasm is 32 bit
+    nativeHeap.alloc<DoubleVar>().ptr.toLong().toInt() 
+
+fun deallocateDouble(ptr: Int) = {}
+    //nativeHeap.free(ptr.toLong().toCPointer<DoubleVar>())
+
 @SymbolName("Kotlin_String_utf16pointer")
 external public fun stringPointer(message: String): Pointer
 

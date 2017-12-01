@@ -96,7 +96,13 @@ function toUTF16String(pointer, size) {
 }
 
 function twoIntsToDouble(upper, lower) {
-    
+    var buffer = new ArrayBuffer(8);
+    var ints = new Int32Array(buffer);
+    var doubles = new Float64Array(buffer);
+    ints[0] = upper;
+    ints[1] = lower;
+    console.log(doubles[0]);
+    return doubles[0];
 }
 
 function int32ToHeap(value, pointer) {

@@ -5,47 +5,50 @@ import org.jetbrains.kotlin.konan.jsinterop.tool.Type.*
 // This shall be an output of Web IDL parser.
 val all = listOf(
     Interface("Context", 
-        Attribute("lineWidth", Integer),
+        Attribute("lineWidth", idlInt),
         Attribute("fillStyle", idlString),
         Attribute("strokeStyle", idlString),
 
-        Operation("lineTo", Void, Arg("x", Integer), Arg("y", Integer)),
-        Operation("moveTo", Void, Arg("x", Integer), Arg("y", Integer)),
-        Operation("beginPath", Void),
-        Operation("stroke", Void),
-        Operation("fillRect", Void, Arg("x", Integer), Arg("y", Integer), Arg("width", Integer), Arg("height", Integer)),
-        Operation("fillText", Void, Arg("test", idlString), Arg("x", Integer),  Arg("y", Integer), Arg("maxWidth", Integer)),
-        Operation("fill", Void),
-        Operation("closePath", Void)
+        Operation("lineTo", idlVoid, Arg("x", idlInt), Arg("y", idlInt)),
+        Operation("moveTo", idlVoid, Arg("x", idlInt), Arg("y", idlInt)),
+        Operation("beginPath", idlVoid),
+        Operation("stroke", idlVoid),
+        Operation("fillRect", idlVoid, Arg("x", idlInt), Arg("y", idlInt), Arg("width", idlInt), Arg("height", idlInt)),
+        Operation("fillText", idlVoid, Arg("test", idlString), Arg("x", idlInt),  Arg("y", idlInt), Arg("maxWidth", idlInt)),
+        Operation("fill", idlVoid),
+        Operation("closePath", idlVoid)
     ),
     Interface("DOMRect",
-        Attribute("left", Integer),
-        Attribute("right", Integer),
-        Attribute("top", Integer),
-        Attribute("bottom", Integer)
+        Attribute("left", idlInt),
+        Attribute("right", idlInt),
+        Attribute("top", idlInt),
+        Attribute("bottom", idlInt)
     ),
     Interface("Canvas",
-        Operation("getContext", InterfaceRef("Context"), Arg("context", idlString)),
-        Operation("getBoundingClientRect", InterfaceRef("DOMRect"))
+        Operation("getContext", idlInterfaceRef("Context"), Arg("context", idlString)),
+        Operation("getBoundingClientRect", idlInterfaceRef("DOMRect"))
     ),
     Interface("Document",
-        Operation("getElementById", Object, Arg("id", idlString))
+        Operation("getElementById", idlObject, Arg("id", idlString))
+    ),
+    Interface("Math",
+        Operation("sin", idlDouble, Arg("x", idlDouble))
     ),
     Interface("MouseEvent",
-        Attribute("clientX", Integer, readOnly = true),
-        Attribute("clientY", Integer, readOnly = true)
+        Attribute("clientX", idlInt, readOnly = true),
+        Attribute("clientY", idlInt, readOnly = true)
     ),
     Interface("Response",
-        Operation("json", Object)
+        Operation("json", idlObject)
     ),
     Interface("Promise",
-        Operation("then", InterfaceRef("Promise"), Arg("lambda", Function))
+        Operation("then", idlInterfaceRef("Promise"), Arg("lambda", idlFunction))
     ),
     Interface("__Global",
-        Attribute("document", InterfaceRef("Document"), readOnly = true),
+        Attribute("document", idlInterfaceRef("Document"), readOnly = true),
 
-        Operation("fetch", InterfaceRef("Promise"), Arg("url", idlString)),
-        Operation("setInterval", Void, Arg("lambda", Function), Arg("interval", Integer))
+        Operation("fetch", idlInterfaceRef("Promise"), Arg("url", idlString)),
+        Operation("setInterval", idlVoid, Arg("lambda", idlFunction), Arg("interval", idlInt))
     )
 )
 
