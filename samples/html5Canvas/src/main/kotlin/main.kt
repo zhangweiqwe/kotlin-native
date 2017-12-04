@@ -34,6 +34,8 @@ fun main(args: Array<String>) {
     }
 
     setInterval(10) {
+        println("hello ZZZ")
+        println(_Math.sin(1.0))
         if (draw) {
             ctx.strokeStyle = "#222222"
             ctx.lineTo(mouseX, mouseY)

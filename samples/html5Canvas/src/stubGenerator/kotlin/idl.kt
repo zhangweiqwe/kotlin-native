@@ -46,6 +46,7 @@ val all = listOf(
     ),
     Interface("__Global",
         Attribute("document", idlInterfaceRef("Document"), readOnly = true),
+        Attribute("_Math", idlInterfaceRef("Math"), readOnly = true),
 
         Operation("fetch", idlInterfaceRef("Promise"), Arg("url", idlString)),
         Operation("setInterval", idlVoid, Arg("lambda", idlFunction), Arg("interval", idlInt))

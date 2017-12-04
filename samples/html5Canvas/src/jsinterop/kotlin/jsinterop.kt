@@ -24,7 +24,8 @@ fun doubleUpper(value: Double): Int =
 fun doubleLower(value: Double): Int =
     (value.toBits() and 0x00000000ffffffff) .toInt()
 
-external fun heapDouble(pointer: Int): Double// = 
+//@SymbolName("Konan_js_heapDouble")
+fun heapDouble(pointer: Int): Double = 12345.6789// = 
     //pointer.toLong().toCPointer<DoubleVar>()!!.value
 
 fun allocateDouble(): Int =
