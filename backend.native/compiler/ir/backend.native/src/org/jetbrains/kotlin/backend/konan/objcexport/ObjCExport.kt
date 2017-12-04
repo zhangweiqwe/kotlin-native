@@ -177,7 +177,8 @@ internal fun ModuleDescriptor.guessMainPackage(): FqName {
             .filter { it.getMemberScope().getContributedDescriptors().isNotEmpty() }
             .map { it.fqName }.distinct()
 
-    return allPackages.map { it.fqName }.distinct().filter { candidate ->
-        nonEmptyPackages.all { it.isSubpackageOf(candidate) }
-    }.maxBy { it.asString() }!!
+    return allPackages.map { it.fqName }.distinct()
+            .filter { candidate -> nonEmptyPackages.all { it.isSubpackageOf(candidate) } }
+            // Now there are all common ancestors of non-empty packages. Longest of them is the least common accessor:
+            .maxBy { it.asString().length }!!
 }
