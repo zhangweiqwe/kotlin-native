@@ -93,7 +93,7 @@ fun Type.wasmReturnMapping(value: String): String {
         is idlVoid -> ""
         is idlInt -> value
         is idlFloat -> value
-        is idlDouble -> "heapDouble($value)"
+        is idlDouble -> "doubleResult"
         is idlString -> "TODO(\"Implement me\")"
         is idlObject -> "JsValue(ArenaManager.currentArena, $value)"
         is idlFunction -> "TODO(\"Implement me\")"
@@ -135,6 +135,7 @@ fun Operation.generateKotlin(parent: Interface): String {
     "): ${returnType.toKotlinType()} {\n" +
     "    ${if (returnType == idlDouble) "val resultPtr = allocateDouble()" else ""}\n" +
     "    ${if (returnType != idlVoid) "val wasmRetVal = " else ""}${wasmFunctionName(name, parent.name)}($wasmArgList)\n" +
+    "    ${if (returnType == idlDouble) "val doubleResult = heapDouble(wasmRetVal)" else ""}\n" +
     "    ${if (returnType == idlDouble) "deallocateDouble(resultPtr)" else ""}\n" +
     "    return ${returnType.wasmReturnMapping("wasmRetVal")}\n"+
     "  }\n"
@@ -293,7 +294,7 @@ fun Arg.composeWasmArgs(): String {
         is idlInt -> ""
         is idlFloat -> ""
         is idlDouble -> 
-            "    var $name = twoIntstoDouble(${name}Upper, ${name}Lower);\n"
+            "    var $name = twoIntsToDouble(${name}Upper, ${name}Lower);\n"
         is idlString -> 
             "    var $name = toUTF16String(${name}Ptr, ${name}Len);\n"
         is idlObject -> TODO("implement me")
@@ -335,7 +336,7 @@ val Type.wasmReturnExpression get() =
         is idlVoid -> ""
         is idlInt -> "result"
         is idlFloat -> "result" // TODO: can we really pass floats as is?
-        is idlDouble -> "doubleToHeap(resultPtr, result)"
+        is idlDouble -> "doubleToHeap(result, resultPtr)"
         is idlString -> "toArena(resultArena, result)"
         is idlObject -> "toArena(resultArena, result)"
         is idlInterfaceRef -> "toArena(resultArena, result)"

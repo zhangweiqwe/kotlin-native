@@ -31,7 +31,7 @@ val all = listOf(
     Interface("Document",
         Operation("getElementById", idlObject, Arg("id", idlString))
     ),
-    Interface("Math",
+    Interface("_Math",
         Operation("sin", idlDouble, Arg("x", idlDouble))
     ),
     Interface("MouseEvent",
@@ -46,7 +46,7 @@ val all = listOf(
     ),
     Interface("__Global",
         Attribute("document", idlInterfaceRef("Document"), readOnly = true),
-        Attribute("_Math", idlInterfaceRef("Math"), readOnly = true),
+        Attribute("Math", idlInterfaceRef("_Math"), readOnly = true),
 
         Operation("fetch", idlInterfaceRef("Promise"), Arg("url", idlString)),
         Operation("setInterval", idlVoid, Arg("lambda", idlFunction), Arg("interval", idlInt))

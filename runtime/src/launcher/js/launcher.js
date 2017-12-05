@@ -99,17 +99,36 @@ function twoIntsToDouble(upper, lower) {
     var buffer = new ArrayBuffer(8);
     var ints = new Int32Array(buffer);
     var doubles = new Float64Array(buffer);
-    ints[0] = upper;
-    ints[1] = lower;
-    console.log(doubles[0]);
+    ints[1] = upper;
+    ints[0] = lower;
+    console.log("twoIntsToDouble() : upper: " + upper + ", lower: " + lower + ", double: " + doubles[0]);
     return doubles[0];
 }
 
+function doubleToTwoInts(value) {
+    var buffer = new ArrayBuffer(8);
+    var ints = new Int32Array(buffer);
+    var doubles = new Float64Array(buffer);
+    doubles[0] = value;
+    var twoInts = {upper: ints[1], lower: ints[2]};
+    return twoInts
+}
+
 function int32ToHeap(value, pointer) {
+    console.log("int32ToHeap: pointer = " + pointer);
     heap[pointer]   = value & 0xff;
     heap[pointer+1] = (value & 0xff00) >>> 8;
     heap[pointer+2] = (value & 0xff0000) >>> 16;
     heap[pointer+3] = (value & 0xff000000) >>> 24;
+}
+
+function doubleToHeap(value, pointer) {
+    var twoInts = doubleToTwoInts(value);
+    console.log("doubleToHeap: pointer = " + pointer);
+    console.log("doubleToHeap: upper " + twoInts.upper + ", lower " + twoInts.lower + ", double = " + value);
+    int32ToHeap(twoInts.lower, pointer);
+    int32ToHeap(twoInts.upper, pointer + 4);
+    return pointer;
 }
 
 function stackTop() {

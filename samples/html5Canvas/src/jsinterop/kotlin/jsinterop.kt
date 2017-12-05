@@ -24,16 +24,18 @@ fun doubleUpper(value: Double): Int =
 fun doubleLower(value: Double): Int =
     (value.toBits() and 0x00000000ffffffff) .toInt()
 
-//@SymbolName("Konan_js_heapDouble")
-fun heapDouble(pointer: Int): Double = 12345.6789// = 
-    //pointer.toLong().toCPointer<DoubleVar>()!!.value
+fun heapDouble(pointer: Int): Double {
+    println ("heapdDouble: pointer  = $pointer")
+    return pointer.toLong().toCPointer<DoubleVar>()!!.pointed.value
+}
 
-fun allocateDouble(): Int =
+fun allocateDouble(): Int {
     // TODO: LP64 unsafe, but wasm is 32 bit
-    nativeHeap.alloc<DoubleVar>().ptr.toLong().toInt() 
+    return nativeHeap.alloc<DoubleVar>().ptr.toLong().toInt() 
+}
 
-fun deallocateDouble(ptr: Int) = {}
-    //nativeHeap.free(ptr.toLong().toCPointer<DoubleVar>())
+fun deallocateDouble(ptr: Int) = 
+    nativeHeap.free(ptr.toLong().toCPointer<DoubleVar>()!!.pointed)
 
 @SymbolName("Kotlin_String_utf16pointer")
 external public fun stringPointer(message: String): Pointer
